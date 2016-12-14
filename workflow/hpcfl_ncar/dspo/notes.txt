@@ -1,0 +1,20 @@
+1. Prepare original software
+2. Measure hardware counters and other performance metrices
+3. Make an only one change
+4. Measure Again
+5. Collect comparison results including
+	- the control change
+	- compilation logs
+	- execution logs
+	- hw counters
+	- derived metrices
+	- intra analysis per each group of counters
+	- inter analysis among two groups
+6. Solve the puzzle
+7. Generate analysis result
+8. Come up with enhancements
+9. Implement the enhancements
+10. Measure again
+11. Collect metricies
+12. Generate Optimization result
+

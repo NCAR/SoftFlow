@@ -90,3 +90,5 @@ ENV/
 
 # User-defined settings
 *.swp
+suite.rc.processed
+passphrase

@@ -1,0 +1,15 @@
+echo    $CYLC_TASK_ID                    # X.20110511T1800Z (e.g.) 
+echo    $CYLC_TASK_NAME                  # X 
+echo    $CYLC_TASK_CYCLE_POINT           # 20110511T1800Z 
+echo    $CYLC_TASK_LOG_ROOT              # ~/cylc-run/foo.bar.baz/log/job/20110511T1800Z/X/01/job 
+echo    $CYLC_TASK_NAMESPACE_HIERARCHY   # "root postproc X" (e.g.) 
+echo    $CYLC_TASK_SUBMIT_NUMBER         # increments with every submit 
+echo    $CYLC_TASK_TRY_NUMBER            # increments with automatic retry-on-fail 
+echo    $CYLC_TASK_WORK_DIR              # task work directory (see below) 
+echo    $CYLC_SUITE_SHARE_DIR            # suite (or task!) shared directory (see below)
+echo    $CYLC_SUITE_DEF_PATH   # $HOME/mysuites/baz (e.g.) 
+echo    $CYLC_SUITE_NAME       # foo.bar.baz (e.g.) 
+echo    $CYLC_SUITE_REG_PATH   # name translate to path: foo/bar/baz 
+echo    $CYLC_SUITE_HOST       # orca.niwa.co.nz (e.g.) 
+echo    $CYLC_SUITE_PORT       # 7766 (e.g.) 
+echo    $CYLC_SUITE_OWNER      # hilary (e.g.)

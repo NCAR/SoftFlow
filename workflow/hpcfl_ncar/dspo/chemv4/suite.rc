@@ -1,0 +1,13 @@
+title = "Task for deciding if -auto compiler flag makes difference"
+
+[cylc]
+
+[scheduling]
+    [[dependencies]]
+        graph = "copyfiles"
+
+[runtime]
+    [[copyfiles]]
+        script = "make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make copyfiles"
+
+[visualization]
