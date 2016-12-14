@@ -1,9 +1,14 @@
 # This makefile is to help installing Cylc on HPC Future Lab cluster of NCAR.
 
+###########
+# Variables
+###########
+
 TMPDIR := /lustre/scratch/youngsun/cylcinstall
 
 CYLC_VERSION := 6.11.2
 CYLC_INSTALLDIR := ${HOME}/opt/cylc/${CYLC_VERSION}
+CYLC_CMD := $(shell command -v cylc 2> /dev/null)
 
 PGV_VERSION := 1.4rc1
 PGV_DISTURL := https://pypi.python.org/packages/25/b1/e44c51b47054ad88aadbe9edcf344bf9b3c61d2d6d15719180ee4d130bcd/pygraphviz-1.4rc1.tar.gz#md5=2f950fb2a61a2dc85efc89543523ec07
@@ -12,17 +17,48 @@ PGV_INSTALLDIR := ${HOME}/opt/pygraphviz/${PGV_VERSION}
 GV_VERSION := 2.38.0
 GV_INSTALLDIR := ${HOME}/opt/graphviz/${GV_VERSION}
 
-check-software:
-ifneq ("$(wildcard ${CYLC_INSTALLDIR}/bin/cylc)","")
+define JOBINITENV
+# Test 1
+# Test 2
+endef
+export JOBINITENV
+
+################
+# check software
+################
+
+check-cylc:
+ifdef CYLC_CMD
+	cylc check-software
+else ifneq ("$(wildcard ${CYLC_INSTALLDIR}/bin/cylc)","")
 	${CYLC_INSTALLDIR}/bin/cylc check-software
 else ifneq ("$(wildcard ${TMPDIR}/cylc-${CYLC_VERSION}/bin/cylc)","")
 	${TMPDIR}/cylc-${CYLC_VERSION}/bin/cylc check-software
 else
 	echo "No Cylc software is found."
-	exit -1
 endif
 
+####################
+# Configure software
+####################
+
+config-cylc:
+ifdef CYLC_CMD
+	mkdir -p ${HOME}/.cylc
+	cylc get-site-config > ${HOME}/.cylc/global.rc
+	echo "" > ${HOME}/.cylc/user.rc
+	echo "$$JOBINITENV" > ${HOME}/.cylc/job-init-env.sh
+else
+	@echo ""
+	@echo "*********************************************"
+	@echo "  cylc command is not working properly."
+	@echo "  Please check PATH and/or Cylc installation."
+	@echo "*********************************************"
+endif
+
+##################
 # Install software
+##################
 
 install-graphviz:
 	cd ${TMPDIR}/graphviz-${GV_VERSION}; ./configure --prefix=${GV_INSTALLDIR}
@@ -41,7 +77,9 @@ install-cylc:
 	@echo "  Add ${CYLC_INSTALLDIR}/bin to PATH env. variable."
 	@echo "********************************************************************"
 
+###################
 # Download software	
+###################
  
 download-graphviz: create_tmpdir
 	cd ${TMPDIR}; wget "http://graphviz.org/pub/graphviz/stable/SOURCES/graphviz-${GV_VERSION}.tar.gz"
@@ -60,6 +98,10 @@ download-cylc: create_tmpdir
 	cd ${TMPDIR}; gunzip ./${CYLC_VERSION}.tar.gz
 	cd ${TMPDIR}; tar -xvf ./${CYLC_VERSION}.tar
 	cd ${TMPDIR}; rm -f ./${CYLC_VERSION}.tar
+
+###############
+# Miscellaneous
+###############
 
 create_tmpdir:
 	mkdir -p ${TMPDIR}

@@ -1,0 +1,36 @@
+# list of cylc commands
+
+# CLI
+shell$ cylc help       # Top level command help. 
+shell$ cylc run --help # Example command-specific help.
+
+# GUI
+shell$ gcylc & # or: 
+shell$ cylc gui & # Use the File menu to switch to specific suite. 
+shell$ cylc gscan & # Scan GUI for multiple running suites.
+shell$ cylc gui tut.oneoff.basic &
+
+# Tutorial
+shell$ cylc import-examples $TMPDIR examples
+shell$ cylc db print examples.tutorial -y
+shell$ cylc db pr --tree -x examples.tutorial
+shell$ cylc rereg examples.tutorial tut
+shell$ cylc db print -x tut
+shell$ cylc validate tut.oneoff.basic
+
+# Edit
+shell$ cylc edit tut.oneoff.basic # in-terminal 
+shell$ cylc edit -g tut.oneoff.basic & # or GUI
+shell$ gcylc tut.oneoff.basic &
+
+# Run
+shell$ cylc run tut.oneoff.basic
+shell$ cylc scan
+shell$ cylc run --debug tut.oneoff.basic 
+shell$ cylc gscan
+
+# Task introspect
+shell$ cylc cat-log tut.oneoff.basic hello.1
+shell$ cylc jobscript tut.oneoff.basic hello.1
+
+
