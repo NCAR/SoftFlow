@@ -1,0 +1,13 @@
+#!/bin/bash
+#SBATCH --time=15
+#SBATCH --nodes 1
+#SBATCH --tasks 1
+#SBATCH --partition knl
+
+#. ~/intel.compiler
+#cd ${PWD}
+
+ulimit -s unlimited
+
+#mpiexec.hydra -n 1 numactl --membind=1 ./kernel.exe
+numactl --membind=1 ./kernel.exe

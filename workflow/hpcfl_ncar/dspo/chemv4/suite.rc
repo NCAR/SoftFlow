@@ -4,10 +4,39 @@ title = "Task for deciding if -auto compiler flag makes difference"
 
 [scheduling]
     [[dependencies]]
-        graph = "copyfiles"
+        graph = """
+			copy_files => build_control & build_experiment
+			build_control => run_control
+			build_experiment & run_control => run_experiment
+		"""
 
 [runtime]
-    [[copyfiles]]
+    [[copy_files]]
         script = "make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make copyfiles"
+
+    [[build_control]]
+        script = "make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make bldcontrol"
+
+    [[build_experiment]]
+        script = "make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make bldexp"
+
+    [[run_control]]
+        script = "make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make runcontrol"
+        [[[job]]] 
+            batch system = slurm 
+            execution time limit = PT15M 
+        [[[directives]]] 
+            --nodes = 1 
+            --tasks = 1 
+            --partition = knl
+    [[run_experiment]]
+        script = "make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make runexp"
+        [[[job]]] 
+            batch system = slurm 
+            execution time limit = PT15M 
+        [[[directives]]] 
+            --nodes = 1 
+            --tasks = 1 
+            --partition = knl
 
 [visualization]
