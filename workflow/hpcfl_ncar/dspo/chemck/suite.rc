@@ -1,0 +1,73 @@
+#!jinja2 
+
+{% set ICP = 1 %}
+{% set FCP = 10 %}
+{% set CPU = [ 'KNL', 'HSW', 'SNB' %}
+
+title = "Task for deciding if -qopenmp compiler flag makes difference"
+
+[cylc]
+
+[scheduling]
+	cycling mode = integer
+	initial cycle point = {{ICP}}
+	final cycle point = {{FCP}}
+    [[dependencies]]
+        [[[R1]]] # = R1/1/?
+			graph = """
+				copy_files => build_control & build_experiment
+				build_control => run_control
+				build_experiment & run_control => run_experiment
+			"""
+        [[[P1]]] # = R/1/P1
+            graph = run_experiment[-P1] => run_control => run_experiment
+
+		[[[ R1/$ ]]]
+			graph = run_experiment => gen_stat
+
+[runtime]
+    [[copy_files]]
+        script = "make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make copyfiles"
+
+    [[build_control]]
+        script = "make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make bldcontrol"
+
+    [[build_experiment]]
+        script = "make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make bldexp"
+
+    [[run_control]]
+        script = "make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make runcontrol"
+        [[[job]]] 
+            batch system = slurm 
+            execution time limit = PT15M 
+        [[[directives]]] 
+            --nodes = 1 
+            --tasks = 1 
+            --partition = knl
+    [[run_experiment]]
+        script = "make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make runexp"
+        [[[job]]] 
+            batch system = slurm 
+            execution time limit = PT15M 
+        [[[directives]]] 
+            --nodes = 1 
+            --tasks = 1 
+            --partition = knl
+    [[gen_stat]]
+        script = """
+			echo "" > $CYLC_TASK_WORK_DIR/$CYLC_SUITE_NAME.run_control.stat
+			echo "" > $CYLC_TASK_WORK_DIR/$CYLC_SUITE_NAME.run_experiment.stat
+
+{% for I in range( ICP, FCP+1) %}
+			cylc log -o chemck run_control.{{I}} >> \
+				$CYLC_TASK_WORK_DIR/$CYLC_SUITE_NAME.run_control.stat
+			cylc log -o chemck run_experiment.{{I}} >> \
+				$CYLC_TASK_WORK_DIR/$CYLC_SUITE_NAME.run_experiment.stat
+{% endfor %}
+
+			make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make checkdiff \
+				BASELINE=$CYLC_TASK_WORK_DIR/$CYLC_SUITE_NAME.run_control.stat \
+				FOLLOWUP=$CYLC_TASK_WORK_DIR/$CYLC_SUITE_NAME.run_experiment.stat
+		"""
+
+[visualization]
