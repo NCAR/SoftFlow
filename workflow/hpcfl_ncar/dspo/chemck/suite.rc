@@ -1,8 +1,9 @@
 #!jinja2 
 
 {% set ICP = 1 %}
-{% set FCP = 10 %}
-{% set CPU = [ 'KNL', 'HSW', 'SNB' %}
+{% set FCP = 3 %}
+{% set CPUS = [ 'KNL', 'HSW', 'SNB' ] %}
+{% set QUEUES = { 'KNL': 'knl', 'HSW': 'haswell-2', 'SNB': 'sandybridge' } %}
 
 title = "Task for deciding if -qopenmp compiler flag makes difference"
 
@@ -15,59 +16,72 @@ title = "Task for deciding if -qopenmp compiler flag makes difference"
     [[dependencies]]
         [[[R1]]] # = R1/1/?
 			graph = """
-				copy_files => build_control & build_experiment
-				build_control => run_control
-				build_experiment & run_control => run_experiment
+{% for CPU in CPUS %}
+				copy_files_{{CPU}} => build_control_{{CPU}} & build_experiment_{{CPU}}
+				build_control_{{CPU}} => run_control_{{CPU}}
+				build_experiment_{{CPU}} & run_control_{{CPU}} => run_experiment_{{CPU}}
+{% endfor %}
 			"""
         [[[P1]]] # = R/1/P1
-            graph = run_experiment[-P1] => run_control => run_experiment
+            graph = """
+{% for CPU in CPUS %}
+				run_experiment_{{CPU}}[-P1] => run_control_{{CPU}} => run_experiment_{{CPU}}
+{% endfor %}
+			"""
 
 		[[[ R1/$ ]]]
-			graph = run_experiment => gen_stat
+            graph = """
+{% for CPU in CPUS %}
+				run_experiment_{{CPU}} => gen_stat_{{CPU}}
+{% endfor %}
+			"""
 
 [runtime]
-    [[copy_files]]
-        script = "make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make copyfiles"
+{% for CPU in CPUS %}
+    [[copy_files_{{CPU}}]]
+        script = "make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make copyfiles CPU={{CPU}}"
 
-    [[build_control]]
-        script = "make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make bldcontrol"
+    [[build_control_{{CPU}}]]
+        script = "make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make bldcontrol CPU={{CPU}}"
 
-    [[build_experiment]]
-        script = "make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make bldexp"
+    [[build_experiment_{{CPU}}]]
+        script = "make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make bldexp CPU={{CPU}}"
 
-    [[run_control]]
-        script = "make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make runcontrol"
+    [[run_control_{{CPU}}]]
+        script = "make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make runcontrol CPU={{CPU}}"
         [[[job]]] 
             batch system = slurm 
             execution time limit = PT15M 
         [[[directives]]] 
             --nodes = 1 
             --tasks = 1 
-            --partition = knl
-    [[run_experiment]]
-        script = "make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make runexp"
+            --partition = {{QUEUES[CPU]}}
+    [[run_experiment_{{CPU}}]]
+        script = "make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make runexp CPU={{CPU}}"
         [[[job]]] 
             batch system = slurm 
             execution time limit = PT15M 
         [[[directives]]] 
             --nodes = 1 
             --tasks = 1 
-            --partition = knl
-    [[gen_stat]]
+            --partition = {{QUEUES[CPU]}}
+    [[gen_stat_{{CPU}}]]
         script = """
-			echo "" > $CYLC_TASK_WORK_DIR/$CYLC_SUITE_NAME.run_control.stat
-			echo "" > $CYLC_TASK_WORK_DIR/$CYLC_SUITE_NAME.run_experiment.stat
+			echo "" > $CYLC_TASK_WORK_DIR/$CYLC_SUITE_NAME.{{CPU}}.run_control.stat
+			echo "" > $CYLC_TASK_WORK_DIR/$CYLC_SUITE_NAME.{{CPU}}.run_experiment.stat
 
-{% for I in range( ICP, FCP+1) %}
-			cylc log -o chemck run_control.{{I}} >> \
-				$CYLC_TASK_WORK_DIR/$CYLC_SUITE_NAME.run_control.stat
-			cylc log -o chemck run_experiment.{{I}} >> \
-				$CYLC_TASK_WORK_DIR/$CYLC_SUITE_NAME.run_experiment.stat
-{% endfor %}
+	{% for I in range( ICP, FCP+1) %}
+			cylc log -o chemck run_control_{{CPU}}.{{I}} >> \
+				$CYLC_TASK_WORK_DIR/$CYLC_SUITE_NAME.{{CPU}}.run_control.stat
+			cylc log -o chemck run_experiment_{{CPU}}.{{I}} >> \
+				$CYLC_TASK_WORK_DIR/$CYLC_SUITE_NAME.{{CPU}}.run_experiment.stat
+	{% endfor %}
 
 			make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make checkdiff \
-				BASELINE=$CYLC_TASK_WORK_DIR/$CYLC_SUITE_NAME.run_control.stat \
-				FOLLOWUP=$CYLC_TASK_WORK_DIR/$CYLC_SUITE_NAME.run_experiment.stat
+				BASELINE=$CYLC_TASK_WORK_DIR/$CYLC_SUITE_NAME.{{CPU}}.run_control.stat \
+				FOLLOWUP=$CYLC_TASK_WORK_DIR/$CYLC_SUITE_NAME.{{CPU}}.run_experiment.stat \
+				CPU={{CPU}}
 		"""
+{% endfor %}
 
 [visualization]
