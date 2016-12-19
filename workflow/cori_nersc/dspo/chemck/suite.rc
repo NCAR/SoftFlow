@@ -1,0 +1,113 @@
+#!jinja2 
+
+#{% set ICP = 1 %}
+#{% set FCP = 2 %}
+{% set REPEAT = 10 %}
+{% set CPUS = [ 'KNL', 'HSW' ] %}
+{% set CONSTRAINTS = { 'KNL': 'knl,quad,flat', 'HSW': 'haswell' } %}
+{% set PRERUN= { 'KNL': 'module swap craype-haswell craype-mic-knl; module load impi', 'HSW': 'module load impi' } %}
+
+######CORI Queues
+# Queue policies : http://www.nersc.gov/users/computational-systems/cori/running-jobs/queues-and-policies/
+#
+#debug
+#regular
+#regularx
+#special
+#realtime
+#shared
+#knl
+#knl_regularx
+#knl_reboot
+
+title = "Task for deciding if -qopenmp compiler flag makes difference"
+
+[cylc]
+
+[scheduling]
+	#cycling mode = integer
+	#initial cycle point = {{ICP}}
+	#final cycle point = {{FCP}}
+    [[dependencies]]
+    #    [[[R1]]] # = R1/1/?
+			graph = """
+{% for CPU in CPUS %}
+				copy_files_{{CPU}} => build_control_{{CPU}} & build_experiment_{{CPU}}
+				build_control_{{CPU}} => run_control_{{CPU}}
+				build_experiment_{{CPU}} => run_experiment_{{CPU}}
+				run_control_{{CPU}} & run_experiment_{{CPU}} => gen_stat_{{CPU}}
+{% endfor %}
+			"""
+
+[runtime]
+{% for CPU in CPUS %}
+    #[[BATCH]]
+    [[copy_files_{{CPU}}]]
+        script = "{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make copyfiles CPU={{CPU}}"
+
+    [[build_control_{{CPU}}]]
+        script = "{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make bldcontrol CPU={{CPU}}"
+
+    [[build_experiment_{{CPU}}]]
+        script = "{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make bldexp CPU={{CPU}}"
+
+    [[run_control_{{CPU}}]]
+        #inherit = BATCH
+        script = """
+            {{PRERUN[CPU]}}; \
+    {% for DUMMY in range(REPEAT) %}
+            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make runcontrol CPU={{CPU}}; \
+    {% endfor %}
+            echo "End of repeat"
+        """
+        [[[job]]] 
+            batch system = slurm 
+            execution time limit = PT30M 
+        [[[directives]]] 
+            --nodes = 1 
+            --tasks = 1 
+            --partition = regular
+            --qos=premium
+            --constraint={{CONSTRAINTS[CPU]}}
+            --license=SCRATCH
+
+    [[run_experiment_{{CPU}}]]
+        #inherit = BATCH
+        script = """
+            {{PRERUN[CPU]}}; \
+    {% for DUMMY in range(REPEAT) %}
+            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make runexp CPU={{CPU}}; \
+    {% endfor %}
+            echo "End of repeat"
+        """
+        [[[job]]] 
+            batch system = slurm 
+            execution time limit = PT30M 
+        [[[directives]]] 
+            --nodes = 1 
+            --tasks = 1 
+            --partition = regular
+            --qos=premium
+            --constraint={{CONSTRAINTS[CPU]}}
+            --license=SCRATCH
+
+    [[gen_stat_{{CPU}}]]
+        script = """
+			echo "" > $CYLC_TASK_WORK_DIR/$CYLC_SUITE_NAME.{{CPU}}.run_control.stat
+			echo "" > $CYLC_TASK_WORK_DIR/$CYLC_SUITE_NAME.{{CPU}}.run_experiment.stat
+
+			cylc log -o chemck run_control_{{CPU}}.1 >> \
+				$CYLC_TASK_WORK_DIR/$CYLC_SUITE_NAME.{{CPU}}.run_control.stat
+			cylc log -o chemck run_experiment_{{CPU}}.1 >> \
+				$CYLC_TASK_WORK_DIR/$CYLC_SUITE_NAME.{{CPU}}.run_experiment.stat
+
+            module load python
+            export PYTHONPATH=$HOME/repos/github/SoftFlow/lib/python:$PYTHONPATH
+			make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make checkdiff \
+				BASELINE=$CYLC_TASK_WORK_DIR/$CYLC_SUITE_NAME.{{CPU}}.run_control.stat \
+				FOLLOWUP=$CYLC_TASK_WORK_DIR/$CYLC_SUITE_NAME.{{CPU}}.run_experiment.stat \
+				CPU={{CPU}}
+		"""
+{% endfor %}
+
+[visualization]

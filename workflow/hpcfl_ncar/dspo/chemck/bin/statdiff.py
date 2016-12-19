@@ -8,7 +8,7 @@ from ulparser import ULParser
 logspecxml = """<?xml version="1.0"?>
 <Log>
     <RepeatTest begin="JOB SCRIPT STARTING" end="JOB SCRIPT EXITING.+" >
-        <Against begin="Verification against '(?P<datafile>.+)' " end="__Against__ ||cylc \(scheduler" >
+        <Against begin="Verification against '(?P<datafile>.+)' " end="__Against__ ||imp_sol summary: # ranks" >
             <TimePerCall line="Time per call \(usec\):\s+(?P<timepercall>[\d\.]+)" />
             <Remainder line=".+" />
         </Against>
@@ -33,7 +33,7 @@ def main():
     testdata = [{}, {}] 
     for idx in range(2):
         # parse files
-        parser = ULParser(logspecxml.strip(), sys.argv[idx+1], isxmlfile=False)
+        parser = ULParser(logspecxml.strip(), sys.argv[idx+1])
      
         # collect data
         for node, depth in parser.walk():
@@ -50,7 +50,6 @@ def main():
     for datafile, baseline in testdata[0].items():
         paired_sample = stats.ttest_rel(baseline, testdata[1][datafile])
         print "The t-statistic is %.3f and the p-value is %.3f." % paired_sample
-
 
     # report
 
