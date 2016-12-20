@@ -11,11 +11,14 @@ WORKDIR := /lustre/scratch/youngsun/cylcworkspace/${SUITENAME}_${CPU}
 MAKEFILEDIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 BINDIR := ${MAKEFILEDIR}
 SUITEDIR := ${MAKEFILEDIR}/..
+SFPYTHONDIR := ${SUITEDIR}/../../../../lib/python
 INCDIR := ${SUITEDIR}/inc
-PYTHONDIR := ${SUITEDIR}/lib/python
+PYTHONDIR := ${SUITEDIR}/lib/python:${SFPYTHONDIR}
 CGROUPDIR := ${WORKDIR}/cgroup
 EGROUPDIR := ${WORKDIR}/egroup
 DATADIR := ${WORKDIR}/data
+
+ALLOCTIME ?= 08:00:00
 
 ###########
 # Targets
@@ -29,6 +32,21 @@ validate:
 
 stop:
 	cylc stop ${SUITENAME}
+
+ready:
+	cylc reset -s ready ${SUITENAME} ${TASKID}
+
+run:
+	cylc run ${SUITENAME}
+
+monitor:
+	cylc monitor ${SUITENAME}
+
+rmport:
+	rm -f ${HOME}/.cylc/ports/${SUITENAME}
+
+preprocess:
+	echo "" > ${TASKROOTDIR}/parse_files.txt
 
 copyfiles:
 	mkdir -p ${WORKDIR}/cgroup
@@ -64,3 +82,6 @@ endif
 
 checkdiff:
 	export PYTHONPATH=${PYTHONDIR}:${PYTHONPATH}; statdiff.py ${BASELINE} ${FOLLOWUP}
+
+genoutput:
+	export PYTHONPATH=${PYTHONDIR}:${PYTHONPATH}; genoutput.py
