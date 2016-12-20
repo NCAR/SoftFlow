@@ -52,6 +52,9 @@ rmport:
 salloc:
 	salloc -N 1 -C haswell -p regular --qos=premium -t ${ALLOCTIME}
 
+preprocess:
+    echo "" > ${TASKROOTDIR}/parse_files.txt
+    
 copyfiles:
 	mkdir -p ${WORKDIR}/cgroup
 	mkdir -p ${WORKDIR}/egroup
@@ -90,3 +93,7 @@ endif
 
 checkdiff:
 	export PYTHONPATH=${PYTHONDIR}:${PYTHONPATH}; statdiff.py ${BASELINE} ${FOLLOWUP}
+
+genoutput:
+	export PYTHONPATH=${PYTHONDIR}:${PYTHONPATH}; genoutput.py
+

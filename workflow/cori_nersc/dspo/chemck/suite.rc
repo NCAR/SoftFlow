@@ -2,12 +2,12 @@
 
 #{% set ICP = 1 %}
 #{% set FCP = 2 %}
-{% set REPEAT = 10 %}
+{% set REPEAT = 1 %}
 {% set CPUS = [ 'KNL', 'HSW' ] %}
 {% set CONSTRAINTS = { 'KNL': 'knl,quad,flat', 'HSW': 'haswell' } %}
 {% set PRERUN= { 'KNL': 'module swap craype-haswell craype-mic-knl; module load impi', 'HSW': 'module load impi' } %}
 
-######CORI Queues
+###### CORI Queues
 # Queue policies : http://www.nersc.gov/users/computational-systems/cori/running-jobs/queues-and-policies/
 #
 #debug
@@ -19,6 +19,22 @@
 #knl
 #knl_regularx
 #knl_reboot
+
+###### Cylc Runtime variables
+#echo    $CYLC_TASK_NAME                  # X
+#echo    $CYLC_TASK_CYCLE_POINT           # 20110511T1800Z
+#echo    $CYLC_TASK_LOG_ROOT              # ~/cylc-run/foo.bar.baz/log/job/20110511T1800Z/X/01/job
+#echo    $CYLC_TASK_NAMESPACE_HIERARCHY   # "root postproc X" (e.g.)
+#echo    $CYLC_TASK_SUBMIT_NUMBER         # increments with every submit
+#echo    $CYLC_TASK_TRY_NUMBER            # increments with automatic retry-on-fail
+#echo    $CYLC_TASK_WORK_DIR              # task work directory (see below)
+#echo    $CYLC_SUITE_SHARE_DIR            # suite (or task!) shared directory (see below)
+#echo    $CYLC_SUITE_DEF_PATH   # $HOME/mysuites/baz (e.g.)
+#echo    $CYLC_SUITE_NAME       # foo.bar.baz (e.g.)
+#echo    $CYLC_SUITE_REG_PATH   # name translate to path: foo/bar/baz
+#echo    $CYLC_SUITE_HOST       # orca.niwa.co.nz (e.g.)
+#echo    $CYLC_SUITE_PORT       # 7766 (e.g.)
+#echo    $CYLC_SUITE_OWNER      # hilary (e.g.)
 
 title = "Task for deciding if -qopenmp compiler flag makes difference"
 
@@ -32,24 +48,37 @@ title = "Task for deciding if -qopenmp compiler flag makes difference"
     #    [[[R1]]] # = R1/1/?
 			graph = """
 {% for CPU in CPUS %}
+                preprocess => copy_files_{{CPU}}
 				copy_files_{{CPU}} => build_control_{{CPU}} & build_experiment_{{CPU}}
 				build_control_{{CPU}} => run_control_{{CPU}}
 				build_experiment_{{CPU}} => run_experiment_{{CPU}}
 				run_control_{{CPU}} & run_experiment_{{CPU}} => gen_stat_{{CPU}}
+                gen_stat_{{CPU}} => gen_output
 {% endfor %}
 			"""
 
 [runtime]
+    [[preprocess]]
+        script = """
+            export TASKROOTDIR=`python -c "import os; print os.path.commonprefix([$CYLC_TASK_LOG_ROOT, $CYLC_TASK_WORK_DIR])`"
+			make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make preprocess TASKROOTDIR=$TASKROOTDIR
+        """
 {% for CPU in CPUS %}
     #[[BATCH]]
     [[copy_files_{{CPU}}]]
-        script = "{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make copyfiles CPU={{CPU}}"
+        script = """
+            {{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make copyfiles CPU={{CPU}}
+        """
 
     [[build_control_{{CPU}}]]
-        script = "{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make bldcontrol CPU={{CPU}}"
+        script = """
+            {{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make bldcontrol CPU={{CPU}}
+        """
 
     [[build_experiment_{{CPU}}]]
-        script = "{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make bldexp CPU={{CPU}}"
+        script = """
+            {{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make bldexp CPU={{CPU}}
+        """
 
     [[run_control_{{CPU}}]]
         #inherit = BATCH
@@ -60,16 +89,16 @@ title = "Task for deciding if -qopenmp compiler flag makes difference"
     {% endfor %}
             echo "End of repeat"
         """
-        [[[job]]] 
-            batch system = slurm 
-            execution time limit = PT30M 
-        [[[directives]]] 
-            --nodes = 1 
-            --tasks = 1 
-            --partition = regular
-            --qos=premium
-            --constraint={{CONSTRAINTS[CPU]}}
-            --license=SCRATCH
+#        [[[job]]] 
+#            batch system = slurm 
+#            execution time limit = PT30M 
+#        [[[directives]]] 
+#            --nodes = 1 
+#            --tasks = 1 
+#            --partition = regular
+#            --qos=premium
+#            --constraint={{CONSTRAINTS[CPU]}}
+#            --license=SCRATCH
 
     [[run_experiment_{{CPU}}]]
         #inherit = BATCH
@@ -80,16 +109,16 @@ title = "Task for deciding if -qopenmp compiler flag makes difference"
     {% endfor %}
             echo "End of repeat"
         """
-        [[[job]]] 
-            batch system = slurm 
-            execution time limit = PT30M 
-        [[[directives]]] 
-            --nodes = 1 
-            --tasks = 1 
-            --partition = regular
-            --qos=premium
-            --constraint={{CONSTRAINTS[CPU]}}
-            --license=SCRATCH
+#        [[[job]]] 
+#            batch system = slurm 
+#            execution time limit = PT30M 
+#        [[[directives]]] 
+#            --nodes = 1 
+#            --tasks = 1 
+#            --partition = regular
+#            --qos=premium
+#            --constraint={{CONSTRAINTS[CPU]}}
+#            --license=SCRATCH
 
     [[gen_stat_{{CPU}}]]
         script = """
@@ -109,5 +138,9 @@ title = "Task for deciding if -qopenmp compiler flag makes difference"
 				CPU={{CPU}}
 		"""
 {% endfor %}
+    [[gen_output]]
+        script = """
+			make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make genoutput
+        """
 
 [visualization]
