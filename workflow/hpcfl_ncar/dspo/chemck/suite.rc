@@ -1,7 +1,7 @@
 #!jinja2 
 
 {% set ICP = 1 %}
-{% set FCP = 3 %}
+{% set FCP = 5 %}
 {% set CPUS = [ 'KNL', 'HSW', 'SNB' ] %}
 {% set QUEUES = { 'KNL': 'knl', 'HSW': 'haswell-2', 'SNB': 'sandybridge' } %}
 

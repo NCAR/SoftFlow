@@ -1,4 +1,5 @@
 # Job commands
+# Cylc should issue commands in this Makefile
 
 ###############
 # Variables
@@ -46,7 +47,7 @@ rmport:
 ###############
 
 preprocess:
-	python ${SFROOTDIR}/lib/python/packresult.py ${CYLC_TASK_WORK_DIR} init ${CYLC_SUITE_REG_NAME}
+	python ${SFROOTDIR}/lib/python/packresult.py init
 
 copyfiles:
 	mkdir -p ${WORKDIR}/cgroup
@@ -61,10 +62,14 @@ copyfiles:
 	#yes | cp -fp ${INCDIR}/mo_nln_matrix.F90-egroup ${WORKDIR}/egroup/mo_nln_matrix.F90
 
 bldcontrol:
-	source ${HOME}/intel.compiler; cd ${CGROUPDIR}; make -j 4 -f ./Makefile-cgroup build CPU=${CPU}
+	source ${HOME}/intel.compiler; cd ${CGROUPDIR}; \
+		make -j 4 -f ./Makefile-cgroup build CPU=${CPU}; \
+		python ${SFROOTDIR}/lib/python/packresult.py set replace compiler-version `ifort -v 2>&1`
 
 bldexp:
-	source ${HOME}/intel.compiler; cd ${EGROUPDIR}; make -j 4 -f ./Makefile-egroup build CPU=${CPU}
+	source ${HOME}/intel.compiler; cd ${EGROUPDIR}; \
+		make -j 4 -f ./Makefile-egroup build CPU=${CPU}; \
+		python ${SFROOTDIR}/lib/python/packresult.py set replace compiler-version `ifort -v 2>&1`
 
 runcontrol:
 ifeq (${CPU},KNL)
@@ -72,6 +77,9 @@ ifeq (${CPU},KNL)
 else
 	source ${HOME}/intel.compiler; ulimit -s unlimited; cd ${CGROUPDIR}; srun -n 1 ./kernel.exe
 endif
+	python ${SFROOTDIR}/lib/python/packresult.py set replace tasks##${CYLC_TASK_ID}##cpu \
+		`cat /proc/cpuinfo | grep model | grep name | head -n 1 | cut -d ":" -f 2`
+	python ${SFROOTDIR}/lib/python/packresult.py set replace tasks##${CYLC_TASK_ID}##node `uname -n`
 
 runexp:
 ifeq (${CPU},KNL)
@@ -79,9 +87,13 @@ ifeq (${CPU},KNL)
 else
 	source ${HOME}/intel.compiler; ulimit -s unlimited; cd ${EGROUPDIR}; srun -n 1 ./kernel.exe
 endif
+	python ${SFROOTDIR}/lib/python/packresult.py set replace tasks##${CYLC_TASK_ID}##cpu \
+		`cat /proc/cpuinfo | grep model | grep name | head -n 1 | cut -d ":" -f 2`
+	python ${SFROOTDIR}/lib/python/packresult.py set replace tasks##${CYLC_TASK_ID}##node `uname -n`
 
 checkdiff:
-	python ${BINDIR}/statdiff.py ${BASELINE} ${FOLLOWUP}
+	python ${BINDIR}/statdiff.py ${BASELINE} ${FOLLOWUP} ${CPU} \
+		$(shell python ${SFROOTDIR}/lib/python/packresult.py outfile) ${CYLC_SUITE_REG_NAME}
 
 genoutput:
-	python ${SFROOTDIR}/lib/python/packresult.py ${CYLC_TASK_WORK_DIR} pack
+	python ${SFROOTDIR}/lib/python/packresult.py pack
