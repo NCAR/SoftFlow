@@ -17,6 +17,7 @@ title = "Task for deciding if -qopenmp compiler flag makes difference"
         [[[R1]]] # = R1/1/?
 			graph = """
 {% for CPU in CPUS %}
+				preprocess => copy_files_{{CPU}}
 				copy_files_{{CPU}} => build_control_{{CPU}} & build_experiment_{{CPU}}
 				build_control_{{CPU}} => run_control_{{CPU}}
 				build_experiment_{{CPU}} & run_control_{{CPU}} => run_experiment_{{CPU}}
@@ -33,10 +34,20 @@ title = "Task for deciding if -qopenmp compiler flag makes difference"
             graph = """
 {% for CPU in CPUS %}
 				run_experiment_{{CPU}} => gen_stat_{{CPU}}
+				gen_stat_{{CPU}} => gen_output
 {% endfor %}
 			"""
 
 [runtime]
+    [[root]] 
+        [[[environment]]] 
+			SFROOTDIR="${CYLC_SUITE_DEF_PATH}/../../../.."
+            PYTHONPATH="${CYLC_SUITE_DEF_PATH}/lib/python:${SFROOTDIR}/lib/python"
+    [[preprocess]]
+        script = """
+            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make preprocess
+        """
+# TASKROOTDIR=$TASKROOTDIR
 {% for CPU in CPUS %}
     [[copy_files_{{CPU}}]]
         script = "make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make copyfiles CPU={{CPU}}"
@@ -83,5 +94,9 @@ title = "Task for deciding if -qopenmp compiler flag makes difference"
 				CPU={{CPU}}
 		"""
 {% endfor %}
+    [[gen_output]]
+        script = """
+            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make genoutput
+        """
 
 [visualization]

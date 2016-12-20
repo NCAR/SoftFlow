@@ -1,60 +1,60 @@
-# Wrapper for useful commands
+# Job commands
 
 ###############
 # Variables
 ##############
 
-SUITENAME := chemck
 CPU ?= KNL
+SFROOTDIR ?= ${HOME}/repos/github/SoftFlow
+CYLC_SUITE_REG_NAME ?= chemck
+CYLC_SUITE_DEF_PATH ?= ${SFROOTDIR}/workflow/hpcfl_ncar/dspo/chemck
 
-WORKDIR := /lustre/scratch/youngsun/cylcworkspace/${SUITENAME}_${CPU}
-MAKEFILEDIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-BINDIR := ${MAKEFILEDIR}
-SUITEDIR := ${MAKEFILEDIR}/..
-SFPYTHONDIR := ${SUITEDIR}/../../../../lib/python
-INCDIR := ${SUITEDIR}/inc
-PYTHONDIR := ${SUITEDIR}/lib/python:${SFPYTHONDIR}
+WORKDIR := /lustre/scratch/youngsun/cylcworkspace/${CYLC_SUITE_REG_NAME}_${CPU}
 CGROUPDIR := ${WORKDIR}/cgroup
 EGROUPDIR := ${WORKDIR}/egroup
-DATADIR := ${WORKDIR}/data
+BINDIR := ${CYLC_SUITE_DEF_PATH}/bin
+INCDIR := ${CYLC_SUITE_DEF_PATH}/inc
 
-ALLOCTIME ?= 08:00:00
 
-###########
-# Targets
-###########
+###############
+# Cylc commands
+###############
 
 register:
-	cylc register ${SUITENAME} ${SUITEDIR}
+	cylc register ${CYLC_SUITE_REG_NAME} ${CYLC_SUITE_DEF_PATH}
 
 validate:
-	cylc validate ${SUITENAME}
+	cylc validate ${CYLC_SUITE_REG_NAME}
 
 stop:
-	cylc stop ${SUITENAME}
+	cylc stop ${CYLC_SUITE_REG_NAME}
 
 ready:
-	cylc reset -s ready ${SUITENAME} ${TASKID}
+	cylc reset -s ready ${CYLC_SUITE_REG_NAME} ${TASKID}
 
 run:
-	cylc run ${SUITENAME}
+	cylc run ${CYLC_SUITE_REG_NAME}
 
 monitor:
-	cylc monitor ${SUITENAME}
+	cylc monitor ${CYLC_SUITE_REG_NAME}
 
 rmport:
-	rm -f ${HOME}/.cylc/ports/${SUITENAME}
+	rm -f ${HOME}/.cylc/ports/${CYLC_SUITE_REG_NAME}
+
+###############
+# Task commands
+###############
 
 preprocess:
-	echo "" > ${TASKROOTDIR}/parse_files.txt
+	python ${SFROOTDIR}/lib/python/packresult.py ${CYLC_TASK_WORK_DIR} init ${CYLC_SUITE_REG_NAME}
 
 copyfiles:
 	mkdir -p ${WORKDIR}/cgroup
 	mkdir -p ${WORKDIR}/egroup
 	mkdir -p ${WORKDIR}/data
-	yes | cp -fp ${SUITEDIR}/src/* ${WORKDIR}/cgroup
-	yes | cp -fp ${SUITEDIR}/src/* ${WORKDIR}/egroup
-	yes | cp -fp ${SUITEDIR}/../chemv4/data/* ${WORKDIR}/data
+	yes | cp -fp ${CYLC_SUITE_DEF_PATH}/src/* ${WORKDIR}/cgroup
+	yes | cp -fp ${CYLC_SUITE_DEF_PATH}/src/* ${WORKDIR}/egroup
+	yes | cp -fp ${CYLC_SUITE_DEF_PATH}/../chemv4/data/* ${WORKDIR}/data
 	yes | cp -fp ${INCDIR}/Makefile-cgroup ${WORKDIR}/cgroup
 	yes | cp -fp ${INCDIR}/Makefile-egroup ${WORKDIR}/egroup
 	#mv -f ${WORKDIR}/egroup/mo_nln_matrix.F90 ${WORKDIR}/egroup/mo_nln_matrix.F90.bak
@@ -81,7 +81,7 @@ else
 endif
 
 checkdiff:
-	export PYTHONPATH=${PYTHONDIR}:${PYTHONPATH}; statdiff.py ${BASELINE} ${FOLLOWUP}
+	python ${BINDIR}/statdiff.py ${BASELINE} ${FOLLOWUP}
 
 genoutput:
-	export PYTHONPATH=${PYTHONDIR}:${PYTHONPATH}; genoutput.py
+	python ${SFROOTDIR}/lib/python/packresult.py ${CYLC_TASK_WORK_DIR} pack
