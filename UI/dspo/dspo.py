@@ -14,6 +14,7 @@ db = {}
 
 def launch_httpd(port):
     httpd = HTTPServer(('', port), dspo_webserver.DSPOWebServer)
+    httpd.session = {}
     try:
         httpd.serve_forever()
     except Exception as e:

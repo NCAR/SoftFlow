@@ -1,4 +1,9 @@
 
+body {
+    background-color: #ffe4b5;
+    text-align: center;
+}
+
 /* The side navigation menu */
 .sidenav {
     height: 100%; /* 100% Full-height */
@@ -44,13 +49,6 @@
     padding: 20px;
 }
 
-/* On smaller screens, where height is less than 450px, change the style of */
-/* the sidenav (less padding and a smaller font size) */
-@media screen and (max-height: 450px) {
-    .sidenav { padding-top: 15px; }
-    .sidenav a {font-size: 18px; }
-}
-
 #topleft {
     position:   absolute;
     top:        5px;
@@ -65,25 +63,16 @@
     text-align: right;
 }
 
-.wrapper {
-    text-align: center;
+#input_load {
+    width: 25%;
+    height: 25px;
+    font-size: 20px;
+    border-radius: 5px;
+    border:2px solid #FF6347;
 }
 
-.load_btn {
-    position: absolute;
-    width: 200px;
-    height: 50px;
-    top: 50%;
+#submit_load {
+    width: 100px;
+    height: 25px;
     font-size: 20px;
 }
-            .demo {
-                width: 200px;
-                height: 400px;
-                border-top: solid 1px #BBB;
-                border-left: solid 1px #BBB;
-                border-bottom: solid 1px #FFF;
-                border-right: solid 1px #FFF;
-                background: #FFF;
-                overflow: scroll;
-                padding: 5px;
-            }

@@ -12,11 +12,5 @@ function openNav() {
 function closeNav() {
     document.getElementById("mySidenav").style.width = "0";
     document.getElementById("main").style.marginLeft = "0";
-    document.body.style.backgroundColor = "white";
+    document.body.style.backgroundColor = "#FFE4B5";
 }
-
-$(document).ready( function() {
-    $('#main').fileTree({ root: '/' }, function(file) {
-        alert(file);
-    });
-});
