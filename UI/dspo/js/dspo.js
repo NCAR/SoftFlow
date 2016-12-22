@@ -14,3 +14,9 @@ function closeNav() {
     document.getElementById("main").style.marginLeft = "0";
     document.body.style.backgroundColor = "white";
 }
+
+$(document).ready( function() {
+    $('#main').fileTree({ root: '/' }, function(file) {
+        alert(file);
+    });
+});
