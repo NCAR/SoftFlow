@@ -123,7 +123,7 @@ data_page = """<!DOCTYPE html>
     });
 
     jQuery(function() {
-        $('#checkboxes').bonsai({
+        $('.datatree').bonsai({
             expandAll: true,
             checkboxes: true, // depends on jquery.qubit plugin
             handleDuplicateCheckboxes: true // optional
@@ -141,7 +141,7 @@ data_page = """<!DOCTYPE html>
 </div>
 
 <div class="ui-layout-west">
-    %(tree)s
+    %(westtree)s
 </div>
 
 <div class="ui-layout-south">
@@ -149,7 +149,7 @@ data_page = """<!DOCTYPE html>
 </div>
 
 <div class="ui-layout-east">
-    EAST
+    %(easttree)s
 </div>
 
 <div class="ui-layout-center">
@@ -162,8 +162,8 @@ data_page = """<!DOCTYPE html>
 
 c_msg = '<p style="padding: 10px; color: red; border: black 2px solid">%s</p>'
 
-def _indent(lines):
-    return ' '*TAB + lines.replace('\n', '\n'+' '*TAB)
+def _indent(lines, width=TAB):
+    return ' '*width + lines.replace('\n', '\n'+' '*width)
 
 class DSPOPages(object):
     def __init__(self):
@@ -175,32 +175,35 @@ class DSPOPages(object):
         return index_page%{'msg': msg, 'sid': self.sid}
 
     def gendata(self, data ):
-        def gentree(indata, depth=0):
+        def gentree(indata, itemid=0, depth=0):
             outstr = ''
             if isinstance(indata, dict):
                 if depth == 0:
-                    outstr += '<ol id="checkboxes">\n'
+                    outstr += '<ol class="datatree">\n'
                 else:
-                    outstr += '<ol>\n'
+                    outstr += ' '*depth + '\n<ol>\n'
                 for key, value in indata.items():
-                    outstr += '<li>%s: %s</li>'%(key, gentree(value, depth+TAB))
-                outstr += '</ol>\n'
+                    itemid += 1
+                    outstr += '<li><input type="checkbox" value="%d" checked />%s:\n%s %s</li>'%\
+                        (itemid, key, ' '*depth, gentree(value, itemid, depth+TAB))
+                outstr += ' '*depth + '</ol>\n'
             elif isinstance(indata, (list, tuple)):
                 if any(isinstance(subdata, (dict, list, tuple)) for subdata in indata):
-                    outstr += '<ol>\n'
+                    outstr += ' '*depth + '<ol>\n'
                     if isinstance(indata, (dict, list, tuple)):
                         for subdata in indata:
-                            outstr += gentree(subdata, depth+TAB)
+                            itemid += 1
+                            outstr += gentree(subdata, itemid, depth+TAB)
                     else:
                         outstr += '%s\n'%str(indata)
-                    outstr += '</ol>\n'
+                    outstr += ' '*depth + '</ol>\n'
                 else:
                     outstr += '%s\n'%str(indata)
             else:
                 outstr += '%s\n'%str(indata)
             return outstr
         tree = gentree(data)
-        return data_page%{'sid': self.sid, 'tree': tree}
+        return _indent(data_page%{'sid': self.sid, 'westtree': tree, 'easttree': tree})
 
     def genpage(self, path, params):
 
