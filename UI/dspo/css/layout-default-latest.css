@@ -57,6 +57,7 @@ body {
 }
 .layout-child-container {
 	border:		0; /* remove border because inner-layout-panes probably have borders */
+		overflow:	auto; /* add scrolling to content-div */
 }
 .layout-scroll {
 	overflow:	auto;
@@ -82,6 +83,7 @@ body {
 	.ui-layout-resizer-open-hover ,	/* hover-color to 'resize' */
 	.ui-layout-resizer-dragging {	/* resizer beging 'dragging' */
 		background: #C4E1A4;
+        overflow-y:scroll;
 	}
 	.ui-layout-resizer-dragging {	/* CLONED resizer being dragged */
 		border: 	 1px solid #BBB;

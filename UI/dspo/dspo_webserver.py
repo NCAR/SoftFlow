@@ -25,7 +25,7 @@ index_page = """<!DOCTYPE html>
     </head>
     <body>
         <div id="main">
-            <div id='content'> 
+            <div id='content'>
                 <h1 >Learn From Controlled Experiments</h1>
                 <h3><p><em>Within this tool</em>, complex software performance data can be easily explored and analyzed.</h3>
                 <hr width="50%%">
@@ -33,10 +33,10 @@ index_page = """<!DOCTYPE html>
                 <h3>Load new experiment data</h3>
                 <form id="welcome-form" method="GET" action="/data">
                         <input type="hidden" name="sid" value='%(sid)s'>
-                        <input id="input_load" type="text" name="datapath" value='/home/youngsung/temp/result.json'>
+                        <input id="input_load" type="text" name="datapath" value='/home/youngsung/repos/github/SoftFlow/UI/dspo/result.json'>
                         <input id="submit_load" type="submit" value='Submit'>
                 </form>
-            </div> 
+            </div>
         </div>
     </body>
 </html>"""
@@ -47,12 +47,16 @@ data_page = """<!DOCTYPE html>
 
     <title>Simple Layout Demo</title>
 
+    <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" />
     <link type="text/css" rel="stylesheet" href="css/layout-default-latest.css" />
+    <link type="text/css" rel="stylesheet" href="css/jquery.bonsai.css" />
 
-    <script type="text/javascript" src="js/jquery-latest.js"></script>
-    <script type="text/javascript" src="js/jquery-ui-latest.js"></script>
-    <script type="text/javascript" src="js/jquery.layout-1.3.0.rc30.80.js"></script>
-
+    <script type="text/javascript" src="js/jquery-2.2.4.js"></script>
+    <script type="text/javascript" src="js/jquery-ui.js"></script>
+    <script type="text/javascript" src="js/jquery.layout-latest.js"></script>
+    <script src='js/jquery.bonsai.js'></script>
+<!--    <script src='js/jquery.json-list.js'></script> -->
+    <script src='js/jquery.qubit.js'></script>
     <script type="text/javascript">
     // set EVERY 'state' here so will undo ALL layout changes
     // used by the 'Reset State' button: myLayout.loadState( stateResetSettings )
@@ -82,7 +86,7 @@ data_page = """<!DOCTYPE html>
 
         //  reference only - these options are NOT required because 'true' is the default
             closable:                   true    // pane can open & close
-        ,   resizable:                  true    // when open, pane can be resized 
+        ,   resizable:                  true    // when open, pane can be resized
         ,   slidable:                   true    // when closed, pane can 'slide' open over other panes - closes on mouse-out
         ,   livePaneResizing:           true
 
@@ -109,7 +113,7 @@ data_page = """<!DOCTYPE html>
         ,   west__fxName_close:         "none"  // NO animation when closing west-pane
 
         //  enable showOverflow on west-pane so CSS popups will overlap north pane
-        ,   west__showOverflowOnHover:  true
+        ,   west__showOverflowOnHover:  false
 
         //  enable state management
         ,   stateManagement__enabled:   true // automatic cookie load & save enabled by default
@@ -117,18 +121,27 @@ data_page = """<!DOCTYPE html>
         ,   showDebugMessages:          true // log and/or display messages from debugging & testing code
         });
     });
+
+    jQuery(function() {
+        $('#checkboxes').bonsai({
+            expandAll: true,
+            checkboxes: true, // depends on jquery.qubit plugin
+            handleDuplicateCheckboxes: true // optional
+        });
+    });
+
     </script>
 
 
 </head>
 <body>
 
-<div class="ui-layout-north" onmouseover="myLayout.allowOverflow('north')" onmouseout="myLayout.resetOverflow(this)">
-    NORTH
+<div class="ui-layout-north">
+    <center><h1 >Data Explorer</h1></center>
 </div>
 
 <div class="ui-layout-west">
-    WEST
+    %(tree)s
 </div>
 
 <div class="ui-layout-south">
@@ -161,8 +174,33 @@ class DSPOPages(object):
     def genindex(self, msg='' ):
         return index_page%{'msg': msg, 'sid': self.sid}
 
-    def gendata(self, msg='' ):
-        return data_page%{'msg': msg, 'sid': self.sid}
+    def gendata(self, data ):
+        def gentree(indata, depth=0):
+            outstr = ''
+            if isinstance(indata, dict):
+                if depth == 0:
+                    outstr += '<ol id="checkboxes">\n'
+                else:
+                    outstr += '<ol>\n'
+                for key, value in indata.items():
+                    outstr += '<li>%s: %s</li>'%(key, gentree(value, depth+TAB))
+                outstr += '</ol>\n'
+            elif isinstance(indata, (list, tuple)):
+                if any(isinstance(subdata, (dict, list, tuple)) for subdata in indata):
+                    outstr += '<ol>\n'
+                    if isinstance(indata, (dict, list, tuple)):
+                        for subdata in indata:
+                            outstr += gentree(subdata, depth+TAB)
+                    else:
+                        outstr += '%s\n'%str(indata)
+                    outstr += '</ol>\n'
+                else:
+                    outstr += '%s\n'%str(indata)
+            else:
+                outstr += '%s\n'%str(indata)
+            return outstr
+        tree = gentree(data)
+        return data_page%{'sid': self.sid, 'tree': tree}
 
     def genpage(self, path, params):
 
@@ -181,9 +219,10 @@ class DSPOPages(object):
             try:
                 datapath = urllib.unquote(params['datapath']).decode('utf8')
                 logging.warning(datapath)
-                with open(datapath) as jfile:    
+                data = {}
+                with open(datapath) as jfile:
                     data = json.load(jfile)
-                page = self.gendata()
+                page = self.gendata(data)
             except Exception as e:
                 msg = c_msg%'"%s<br>%s" could not be found. Please check file path.'%(str(e), datapath)
                 page = self.genindex(msg=msg)
@@ -202,23 +241,32 @@ class DSPOWebServer(BaseHTTPRequestHandler):
 
     def do_GET(self):
         try:
+            query = self.path.split("?")
+            path = query[0]
+            params = {}
+            if len(query) > 1:
+                params = dict(urlparse.parse_qsl(query[1], True, True))
+
             sendReply = False
-            if self.path=='/favicon.ico':
+            if path=='/favicon.ico':
                 return
-            if self.path.endswith(".jpg"):
+            if path.endswith(".jpg"):
                 mimetype='image/jpg'
                 sendReply = True
-            if self.path.endswith(".gif"):
+            if path.endswith(".gif"):
                 mimetype='image/gif'
                 sendReply = True
-            if self.path.endswith(".png"):
+            if path.endswith(".png"):
                 mimetype='image/png'
                 sendReply = True
-            if self.path.endswith(".js"):
+            if path.endswith(".js"):
                 mimetype='application/javascript'
                 sendReply = True
-            if self.path.endswith(".css"):
+            if path.endswith(".css"):
                 mimetype='text/css'
+                sendReply = True
+            if path.endswith(".json"):
+                mimetype='application/json'
                 sendReply = True
 
             if sendReply == True:
@@ -227,11 +275,6 @@ class DSPOWebServer(BaseHTTPRequestHandler):
                 self.wfile.write(f.read())
                 f.close()
             else:
-                query = self.path.split("?")
-                path = query[0]
-                params = {}
-                if len(query) > 1:
-                    params = dict(urlparse.parse_qsl(query[1], True, True))
 
                 #logging.warning('%s %s %s'%(query, path, str(params)))
 
