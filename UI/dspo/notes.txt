@@ -1,1 +1,8 @@
 idea : online collaborative analysis through web interface
+idea : general steps to use this UI
+ 1. user loads a json file that has a particular format for this UI
+ 2. User explores the file at north pane and selects target job(s)
+ 3. When target job(s) is(are) selected at north pane, east and west panes are automatically updated
+ 4. User selects data source at east and west panes
+ 5. User picks a type of analysis and visulaizations at center pane. Then an example plots are shown
+ 6. West and east panes produces a collection of json data. User selected analysis/visulataion has a particular format for them. So at south pane user maps source json data collection to target analyss json format

@@ -175,6 +175,18 @@ class DSPOPages(object):
         return index_page%{'msg': msg, 'sid': self.sid}
 
     def gendata(self, data ):
+        def checkjson(indata):
+            if not isinstance(indata, dict): raise Exception("Not a dictionary")
+            if len(indata) == 0: raise Exception("Blank data")
+
+            for jid, content in indata.items():
+                if not isinstance(content, dict): raise Exception("%s is not a dictionary"%str(jid))
+                if len(content) == 0: raise Exception("%s has no data"%str(jid))
+                if not content.has_key('cgroup'): raise Exception("%s has no cgroup"%str(jid))
+                if not content.has_key('egroup'): raise Exception("%s has no egroup"%str(jid))
+                if len(content['cgroup']) == 0: raise Exception("%s cgroup has no data"%str(jid))
+                if len(content['egroup']) == 0: raise Exception("%s egroup has no data"%str(jid))
+
         def gentree(indata, itemid=0, depth=0):
             outstr = ''
             if isinstance(indata, dict):
@@ -202,8 +214,23 @@ class DSPOPages(object):
             else:
                 outstr += '%s\n'%str(indata)
             return outstr
-        tree = gentree(data)
-        return _indent(data_page%{'sid': self.sid, 'westtree': tree, 'easttree': tree})
+        try:
+            checkjson(data)
+            west = {}
+            east = {}
+            common = {}
+            attr = {}
+            for jid, content in data.items():
+                attr[jid] = content.get('__attr__', {})
+                common[jid] = content.get('common', {})
+                west[jid] = content.get('cgroup', {})
+                east[jid] = content.get('egroup', {})
+            # merge common to west and east
+            westtree = gentree(west)
+            easttree = gentree(east)
+        except Exception as e:
+            tree = 'JOSN file check error: %s'%str(e)
+        return _indent(data_page%{'sid': self.sid, 'westtree': westtree, 'easttree': easttree})
 
     def genpage(self, path, params):
 

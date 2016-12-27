@@ -1,14 +1,8 @@
 {
     "chemck": {
-        "HSW": {
-            "t-tests": [
-                [
-                    -22.500965546881613, 
-                    3.7018486247372914e-15
-                ]
-            ], 
-            "timepercall": [
-                {
+        "cgroup": {
+            "HSW": {
+                "timepercall": {
                     "../data/imp_sol.1.0": [
                         16399.25, 
                         17064.234375, 
@@ -37,8 +31,76 @@
                         15979.28125, 
                         15949.109375
                     ]
-                }, 
-                {
+                }
+            },
+            "KNL": {
+                "timepercall": {
+                    "../data/imp_sol.1.0": [
+                        65153.375, 
+                        64667.921875, 
+                        64790.546875, 
+                        64967.0, 
+                        64751.484375
+                    ], 
+                    "../data/imp_sol.1.60": [
+                        65459.265625, 
+                        65080.765625, 
+                        65109.171875, 
+                        65327.671875, 
+                        64975.609375
+                    ], 
+                    "../data/imp_sol.48.0": [
+                        64360.34375, 
+                        64103.90625, 
+                        64153.3125, 
+                        64239.93359375, 
+                        64001.640625
+                    ], 
+                    "../data/imp_sol.48.60": [
+                        63524.953125, 
+                        63775.015625, 
+                        63830.015625, 
+                        63878.70703125, 
+                        63701.984375
+                    ]
+                }
+            },
+            "SNB": {
+                "timepercall": {
+                    "../data/imp_sol.1.0": [
+                        24288.703125, 
+                        24406.46875, 
+                        24521.4375, 
+                        24505.0, 
+                        24562.359375
+                    ], 
+                    "../data/imp_sol.1.60": [
+                        24277.96875, 
+                        24441.65625, 
+                        24431.625, 
+                        24464.65625, 
+                        24454.578125
+                    ], 
+                    "../data/imp_sol.48.0": [
+                        23870.0625, 
+                        24033.71875, 
+                        24028.796875, 
+                        24054.8125, 
+                        24039.765625
+                    ], 
+                    "../data/imp_sol.48.60": [
+                        23948.15625, 
+                        23927.90625, 
+                        23928.71875, 
+                        23952.375, 
+                        23944.796875
+                    ]
+                }
+            }
+        },
+        "egroup": {
+            "HSW": {
+                "timepercall": {
                     "../data/imp_sol.1.0": [
                         19122.203125, 
                         18828.140625, 
@@ -68,47 +130,9 @@
                         18108.671875
                     ]
                 }
-            ]
-        }, 
-        "KNL": {
-            "t-tests": [
-                [
-                    -154.9483811093426, 
-                    6.142547870245298e-31
-                ]
-            ], 
-            "timepercall": [
-                {
-                    "../data/imp_sol.1.0": [
-                        65153.375, 
-                        64667.921875, 
-                        64790.546875, 
-                        64967.0, 
-                        64751.484375
-                    ], 
-                    "../data/imp_sol.1.60": [
-                        65459.265625, 
-                        65080.765625, 
-                        65109.171875, 
-                        65327.671875, 
-                        64975.609375
-                    ], 
-                    "../data/imp_sol.48.0": [
-                        64360.34375, 
-                        64103.90625, 
-                        64153.3125, 
-                        64239.93359375, 
-                        64001.640625
-                    ], 
-                    "../data/imp_sol.48.60": [
-                        63524.953125, 
-                        63775.015625, 
-                        63830.015625, 
-                        63878.70703125, 
-                        63701.984375
-                    ]
-                }, 
-                {
+            },
+            "KNL": {
+                "timepercall": {
                     "../data/imp_sol.1.0": [
                         104406.984375, 
                         104706.890625, 
@@ -138,47 +162,9 @@
                         103253.296875
                     ]
                 }
-            ]
-        }, 
-        "SNB": {
-            "t-tests": [
-                [
-                    -42.951774487997774, 
-                    2.1782507300161035e-20
-                ]
-            ], 
-            "timepercall": [
-                {
-                    "../data/imp_sol.1.0": [
-                        24288.703125, 
-                        24406.46875, 
-                        24521.4375, 
-                        24505.0, 
-                        24562.359375
-                    ], 
-                    "../data/imp_sol.1.60": [
-                        24277.96875, 
-                        24441.65625, 
-                        24431.625, 
-                        24464.65625, 
-                        24454.578125
-                    ], 
-                    "../data/imp_sol.48.0": [
-                        23870.0625, 
-                        24033.71875, 
-                        24028.796875, 
-                        24054.8125, 
-                        24039.765625
-                    ], 
-                    "../data/imp_sol.48.60": [
-                        23948.15625, 
-                        23927.90625, 
-                        23928.71875, 
-                        23952.375, 
-                        23944.796875
-                    ]
-                }, 
-                {
+            },
+            "SNB": {
+                "timepercall": {
                     "../data/imp_sol.1.0": [
                         28877.0625, 
                         28880.1875, 
@@ -208,134 +194,33 @@
                         28317.25
                     ]
                 }
-            ]
-        }, 
-        "begin": "2016-12-21 10:54:51.986364", 
-        "compiler-version": "ifort version 17.0.0", 
-        "job-host": {
-            "cpu": "QEMU Virtual CPU version 1.5.3", 
-            "node": "hllogin01"
-        }, 
-        "tasks": {
-            "run_control_HSW.1": {
-                "cpu": "Intel(R) Xeon(R) CPU E5-2699 v3 @ 2.30GHz", 
-                "node": "hl01.ssg.ucar.edu"
-            }, 
-            "run_control_HSW.2": {
-                "cpu": "Intel(R) Xeon(R) CPU E5-2699 v3 @ 2.30GHz", 
-                "node": "hl01.ssg.ucar.edu"
-            }, 
-            "run_control_HSW.3": {
-                "cpu": "Intel(R) Xeon(R) CPU E5-2699 v3 @ 2.30GHz", 
-                "node": "hl01.ssg.ucar.edu"
-            }, 
-            "run_control_HSW.4": {
-                "cpu": "Intel(R) Xeon(R) CPU E5-2699 v3 @ 2.30GHz", 
-                "node": "hl01.ssg.ucar.edu"
-            }, 
-            "run_control_HSW.5": {
-                "cpu": "Intel(R) Xeon(R) CPU E5-2699 v3 @ 2.30GHz", 
-                "node": "hl01.ssg.ucar.edu"
-            }, 
-            "run_control_KNL.1": {
-                "cpu": "Intel(R) Xeon Phi(TM) CPU 7250 @ 1.40GHz", 
-                "node": "hl08"
-            }, 
-            "run_control_KNL.2": {
-                "cpu": "Intel(R) Xeon Phi(TM) CPU 7250 @ 1.40GHz", 
-                "node": "hl08"
-            }, 
-            "run_control_KNL.3": {
-                "cpu": "Intel(R) Xeon Phi(TM) CPU 7250 @ 1.40GHz", 
-                "node": "hl08"
-            }, 
-            "run_control_KNL.4": {
-                "cpu": "Intel(R) Xeon Phi(TM) CPU 7250 @ 1.40GHz", 
-                "node": "hl08"
-            }, 
-            "run_control_KNL.5": {
-                "cpu": "Intel(R) Xeon Phi(TM) CPU 7250 @ 1.40GHz", 
-                "node": "hl08"
-            }, 
-            "run_control_SNB.1": {
-                "cpu": "Intel(R) Xeon(R) CPU E5-2670 0 @ 2.60GHz", 
-                "node": "hl02.ssg.ucar.edu"
-            }, 
-            "run_control_SNB.2": {
-                "cpu": "Intel(R) Xeon(R) CPU E5-2670 0 @ 2.60GHz", 
-                "node": "hl02.ssg.ucar.edu"
-            }, 
-            "run_control_SNB.3": {
-                "cpu": "Intel(R) Xeon(R) CPU E5-2670 0 @ 2.60GHz", 
-                "node": "hl02.ssg.ucar.edu"
-            }, 
-            "run_control_SNB.4": {
-                "cpu": "Intel(R) Xeon(R) CPU E5-2670 0 @ 2.60GHz", 
-                "node": "hl02.ssg.ucar.edu"
-            }, 
-            "run_control_SNB.5": {
-                "cpu": "Intel(R) Xeon(R) CPU E5-2670 0 @ 2.60GHz", 
-                "node": "hl02.ssg.ucar.edu"
-            }, 
-            "run_experiment_HSW.1": {
-                "cpu": "Intel(R) Xeon(R) CPU E5-2699 v3 @ 2.30GHz", 
-                "node": "hl01.ssg.ucar.edu"
-            }, 
-            "run_experiment_HSW.2": {
-                "cpu": "Intel(R) Xeon(R) CPU E5-2699 v3 @ 2.30GHz", 
-                "node": "hl01.ssg.ucar.edu"
-            }, 
-            "run_experiment_HSW.3": {
-                "cpu": "Intel(R) Xeon(R) CPU E5-2699 v3 @ 2.30GHz", 
-                "node": "hl01.ssg.ucar.edu"
-            }, 
-            "run_experiment_HSW.4": {
-                "cpu": "Intel(R) Xeon(R) CPU E5-2699 v3 @ 2.30GHz", 
-                "node": "hl01.ssg.ucar.edu"
-            }, 
-            "run_experiment_HSW.5": {
-                "cpu": "Intel(R) Xeon(R) CPU E5-2699 v3 @ 2.30GHz", 
-                "node": "hl01.ssg.ucar.edu"
-            }, 
-            "run_experiment_KNL.1": {
-                "cpu": "Intel(R) Xeon Phi(TM) CPU 7250 @ 1.40GHz", 
-                "node": "hl08"
-            }, 
-            "run_experiment_KNL.2": {
-                "cpu": "Intel(R) Xeon Phi(TM) CPU 7250 @ 1.40GHz", 
-                "node": "hl08"
-            }, 
-            "run_experiment_KNL.3": {
-                "cpu": "Intel(R) Xeon Phi(TM) CPU 7250 @ 1.40GHz", 
-                "node": "hl08"
-            }, 
-            "run_experiment_KNL.4": {
-                "cpu": "Intel(R) Xeon Phi(TM) CPU 7250 @ 1.40GHz", 
-                "node": "hl08"
-            }, 
-            "run_experiment_KNL.5": {
-                "cpu": "Intel(R) Xeon Phi(TM) CPU 7250 @ 1.40GHz", 
-                "node": "hl08"
-            }, 
-            "run_experiment_SNB.1": {
-                "cpu": "Intel(R) Xeon(R) CPU E5-2670 0 @ 2.60GHz", 
-                "node": "hl02.ssg.ucar.edu"
-            }, 
-            "run_experiment_SNB.2": {
-                "cpu": "Intel(R) Xeon(R) CPU E5-2670 0 @ 2.60GHz", 
-                "node": "hl02.ssg.ucar.edu"
-            }, 
-            "run_experiment_SNB.3": {
-                "cpu": "Intel(R) Xeon(R) CPU E5-2670 0 @ 2.60GHz", 
-                "node": "hl02.ssg.ucar.edu"
-            }, 
-            "run_experiment_SNB.4": {
-                "cpu": "Intel(R) Xeon(R) CPU E5-2670 0 @ 2.60GHz", 
-                "node": "hl02.ssg.ucar.edu"
-            }, 
-            "run_experiment_SNB.5": {
-                "cpu": "Intel(R) Xeon(R) CPU E5-2670 0 @ 2.60GHz", 
-                "node": "hl02.ssg.ucar.edu"
+            }
+
+        },
+        "common": {
+            "HSW": {
+                "__attr__": {
+                    "node": "Haswell"
+                }
+            },
+            "KNL": {
+                "__attr__": {
+                    "node": "Knigits Landing"
+                }
+            },
+            "SNB": {
+                "__attr__": {
+                    "node": "Sandy Bridge"
+                }
+            }
+
+        },
+        "__attr__": {
+            "begin": "2016-12-21 10:54:51.986364", 
+            "compiler-version": "ifort version 17.0.0", 
+            "job-host": {
+                "cpu": "QEMU Virtual CPU version 1.5.3", 
+                "node": "hllogin01"
             }
         }
     }
