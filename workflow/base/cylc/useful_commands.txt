@@ -34,3 +34,7 @@ shell$ cylc cat-log tut.oneoff.basic hello.1
 shell$ cylc jobscript tut.oneoff.basic hello.1
 
 
+# To activate Cylc on Yellowstone of NCAR
+# Note: Python module should be unloaded if it is loaded already
+shell$ module use /glade/apps/contrib/cylc/MODULEFILES/
+shell$ module load cylc/6.9.1

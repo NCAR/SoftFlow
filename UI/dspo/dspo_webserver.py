@@ -33,7 +33,7 @@ index_page = """<!DOCTYPE html>
                 <h3>Load new experiment data</h3>
                 <form id="welcome-form" method="GET" action="/data">
                         <input type="hidden" name="sid" value='%(sid)s'>
-                        <input id="input_load" type="text" name="datapath" value='/home/youngsung/repos/github/SoftFlow/UI/dspo/result.json'>
+                        <input id="input_load" type="text" name="datapath" value='result.json'>
                         <input id="submit_load" type="submit" value='Submit'>
                 </form>
             </div>
