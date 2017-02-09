@@ -1,0 +1,27 @@
+#!jinja2
+
+{% set CASETYPE = 'ideal' %}
+
+title = "Tasks for using MPAS"
+
+[cylc]
+
+[scheduling]
+	cycling mode = integer
+	initial cycle point = 1
+	final cycle point = 1
+	[[dependencies]]
+
+[runtime]
+	[[download]]
+
+	[[build_init]]
+
+	[[build_core]]
+
+
+	[[run_init]]
+
+	[[run_core]]
+
+[visualization]

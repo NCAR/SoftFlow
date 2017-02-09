@@ -2,8 +2,10 @@
 
 import os
 import sys
+import json
 from scipy import stats
 from ulparser import ULParser
+from sfutil import openjson
 
 logspecxml = """<?xml version="1.0"?>
 <Log>
@@ -18,8 +20,8 @@ logspecxml = """<?xml version="1.0"?>
 """
 
 def main():
-    if len(sys.argv) < 3:
-        print "Usage: %s <file1> <file2>"%sys.argv[0]
+    if len(sys.argv) < 4:
+        print "Usage: %s <file1> <file2> <CPU type> [json filepath] [suite name]"%sys.argv[0]
         sys.exit(-1)
 
     if not os.path.exists(sys.argv[1]):
@@ -29,7 +31,11 @@ def main():
     if not os.path.exists(sys.argv[2]):
         print "ERROR: %s does not exist."%sys.argv[2]
         sys.exit(-1)
-    
+
+    if sys.argv[3] not in ['KNL', 'HSW', 'SNB']:
+        print "ERROR: Unknown CPU type: %s"%sys.argv[3]
+        sys.exit(-1)
+   
     testdata = [{}, {}] 
     for idx in range(2):
         # parse files
@@ -45,13 +51,28 @@ def main():
                     if item.__class__.__name__ == 'TimePerCall':
                         testdata[idx][datafile].append(float(item.timepercall))
                         break
-
-    # t-test
+    ttests = []
     for datafile, baseline in testdata[0].items():
-        paired_sample = stats.ttest_rel(baseline, testdata[1][datafile])
-        print "The t-statistic is %.3f and the p-value is %.3f." % paired_sample
+        t, p = stats.ttest_rel(baseline, testdata[1][datafile])
+        ttests.append([float(t), float(p)])
+        print "The t-statistic is %.3f and the p-value is %.3f." % (t, p)
 
-    # report
+    if len(sys.argv) >= 6:
+        with openjson(sys.argv[4], 'r') as jsonfile:
+            data = json.load(jsonfile)
+
+        jobdata = data[sys.argv[5]]
+        if sys.argv[3] not in jobdata:
+            cpudata = {}
+            jobdata[sys.argv[3]] = cpudata
+        else:
+            cpudata = jobdata[sys.argv[3]]
+            
+        cpudata['timepercall'] = testdata
+        cpudata['t-tests'] = ttests
+
+        with openjson(sys.argv[4], 'w') as jsonfile:
+            json.dump(data, jsonfile, indent=4, sort_keys=True)
 
 if __name__ == "__main__":
     main()
