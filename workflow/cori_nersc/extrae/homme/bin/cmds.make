@@ -22,10 +22,9 @@ CGROUPDIR := ${WORKDIR}/cgroup
 EGROUPDIR := ${WORKDIR}/egroup
 #DATADIR := ${WORKDIR}/data
 
-ALLOCTIME ?= 08:00:00
 
 #################
-# Useful commands
+# Cylc useful commands
 #################
 
 register:
@@ -52,8 +51,12 @@ monitor:
 rmport:
 	rm -f ${HOME}/.cylc/ports/${SUITENAME}
 
+#################
+# Other useful commands
+#################
+
 salloc:
-	salloc -N 1 -C haswell -p regular --qos=premium -t ${ALLOCTIME}
+	salloc -N 1 -C haswell -p regular --qos=premium -t 08:00:00
 
 ####################
 # Cylc Suite Targets
@@ -66,11 +69,21 @@ copy_control:
 	@echo 'Begin copy_control'
 	mkdir -p ${CGROUPDIR}/homme
 	cp -R -u -p ${HOMME_CONTROL}/* ${CGROUPDIR}/homme
+	cp -f ${INCDIR}/prim_main.F90.control ${CGROUPDIR}/homme/src/prim_main.F90
+	cp -f ${INCDIR}/prim_advection_mod.F90 ${CGROUPDIR}/homme/src/share
+	cp -f ${INCDIR}/FindExtrae.cmake ${CGROUPDIR}/homme/cmake
+	cp -f ${INCDIR}/HommeMacros.cmake ${CGROUPDIR}/homme/cmake
+	cp -f ${INCDIR}/extrae.xml ${CGROUPDIR}/run
 
 copy_experiment:
 	@echo 'Begin copy_experiment'
 	mkdir -p ${EGROUPDIR}/homme
 	cp -R -u -p ${HOMME_EXPERIMENT}/* ${EGROUPDIR}/homme
+	cp -f ${INCDIR}/prim_main.F90.experiment ${EGROUPDIR}/homme/src/prim_main.F90
+	cp -f ${INCDIR}/prim_advection_mod.F90 ${EGROUPDIR}/homme/src/share
+	cp -f ${INCDIR}/FindExtrae.cmake ${EGROUPDIR}/homme/cmake
+	cp -f ${INCDIR}/HommeMacros.cmake ${EGROUPDIR}/homme/cmake
+	cp -f ${INCDIR}/extrae.xml ${EGROUPDIR}/run
 
 config_control:
 	@echo 'Begin config_control'
@@ -85,7 +98,11 @@ config_control:
         -DHOMME_PROJID=NONE \
         -DENABLE_PERFTEST=TRUE \
         -DENABLE_OPENMP=TRUE \
+        -DEXTRAE_LIB=ompitracef \
+        -DEXTRAE_DIR:PATH=${EXTRAE_HOME} \
 		${CGROUPDIR}/homme
+
+        #-DEXTRAE_DIR:PATH=/global/homes/g/grnydawn/opt/extrae/3.4.1 \
 
 config_experiment:
 	@echo 'Begin config_experiment'
@@ -100,7 +117,13 @@ config_experiment:
         -DHOMME_PROJID=NONE \
         -DENABLE_PERFTEST=TRUE \
         -DENABLE_OPENMP=TRUE \
+        -DEXTRAE_LIB=ompitracef \
+        -DEXTRAE_DIR:PATH=${EXTRAE_HOME} \
 		${EGROUPDIR}/homme
+
+        #-DEXTRAE_DIR:PATH=/global/homes/g/grnydawn/opt/extrae/3.4.1 \
+		#-DADD_Fortran_FLAGS="-L${EXTRAE_HOME}/lib -l ompitracef" \
+		#-DADD_Fortran_FLAGS="-L${EXTRAE_HOME}/lib -l ompitracef" \
 
 clean_control:
 	@echo 'Begin clean_control'
@@ -113,10 +136,12 @@ clean_experiment:
 build_control:
 	@echo 'Begin build_control'
 	cd ${CGROUPDIR}/build; make VERBOSE=1 -j 8 ${TEST}
+	cp -f ${INCDIR}/prim_main.F90.orig.control ${CGROUPDIR}/homme/src/prim_main.F90
 
 build_experiment:
 	@echo 'Begin build_experiment'
 	cd ${EGROUPDIR}/build; make VERBOSE=1 -j 8 ${TEST}
+	cp -f ${INCDIR}/prim_main.F90.orig.experiment ${EGROUPDIR}/homme/src/prim_main.F90
 
 run_control:
 	@echo 'Begin run_control'

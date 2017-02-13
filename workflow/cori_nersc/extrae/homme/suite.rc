@@ -3,7 +3,8 @@
 {% set CPUS = [ 'HSW' ] %}
 {# set CPUS = [ 'KNL', 'HSW' ] #}
 {% set CONSTRAINTS = { 'KNL': 'knl,quad,flat', 'HSW': 'haswell' } %}
-{% set PRERUN= { 'KNL': 'module swap craype-haswell craype-mic-knl; module load cmake; module load cray-hdf5/1.10.0; module load cray-netcdf', 'HSW': 'module load craype-haswell; module load cmake; module load cray-hdf5/1.10.0; module load cray-netcdf' } %}
+{% set PRERUN= { 'KNL': 'module swap craype-haswell craype-mic-knl; module load cmake; module load cray-hdf5/1.10.0; module load cray-netcdf; export CRAYPE_LINK_TYPE=dynamic', 'HSW': 'module load craype-haswell; module load cmake; module load cray-hdf5/1.10.0; module load cray-netcdf; module load extrae/3.3.0; export CRAYPE_LINK_TYPE=dynamic' } %}
+{% set groups = [ 'control', 'experiment' ] %}
 
 title = "Task for running Extrae"
 
@@ -13,21 +14,11 @@ title = "Task for running Extrae"
 	[[dependencies]]
 		graph = """
 {% for CPU in CPUS %}
-			preprocess => copy_control_{{CPU}} & copy_experiment_{{CPU}}
-			copy_control_{{CPU}} => config_control_{{CPU}}
-			copy_experiment_{{CPU}} => config_experiment_{{CPU}}
-			config_control_{{CPU}} => clean_control_{{CPU}}
-			config_experiment_{{CPU}} => clean_experiment_{{CPU}}
-			clean_control_{{CPU}} => build_control_{{CPU}}
-			clean_experiment_{{CPU}} => build_experiment_{{CPU}}
-			build_control_{{CPU}} => run_control_{{CPU}}
-			build_experiment_{{CPU}} => run_experiment_{{CPU}}
-			run_control_{{CPU}} => collect_control_{{CPU}}
-			run_experiment_{{CPU}} => collect_experiment_{{CPU}}
-			collect_control_{{CPU}} => fold_control_{{CPU}}
-			collect_experiment_{{CPU}} => fold_experiment_{{CPU}}
-			fold_control_{{CPU}} => plot_control_{{CPU}}
-			fold_experiment_{{CPU}} => plot_experiment_{{CPU}}
+    {% for group in groups  %}
+			preprocess => copy_{{group}}_{{CPU}} => config_{{group}}_{{CPU}} =>
+			clean_{{group}}_{{CPU}} => build_{{group}}_{{CPU}} => run_{{group}}_{{CPU}} =>
+			collect_{{group}}_{{CPU}} => fold_{{group}}_{{CPU}} => plot_{{group}}_{{CPU}}
+    {% endfor %}
 {% endfor %}
 		"""
 
@@ -38,86 +29,49 @@ title = "Task for running Extrae"
             make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make preprocess TASKROOTDIR=$TASKROOTDIR
         """
 {% for CPU in CPUS %}
-    [[copy_control_{{CPU}}]]
+    {% for group in groups  %}
+
+    [[copy_{{group}}_{{CPU}}]]
         script = """
-            {{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make copy_control CPU={{CPU}}
+            {{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make copy_{{group}} CPU={{CPU}}
         """
 
-    [[copy_experiment_{{CPU}}]]
+    [[config_{{group}}_{{CPU}}]]
         script = """
-            {{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make copy_experiment CPU={{CPU}}
+            {{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make config_{{group}} CPU={{CPU}}
         """
 
-    [[config_control_{{CPU}}]]
-        script = """
-            {{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make config_control CPU={{CPU}}
-        """
-
-    [[config_experiment_{{CPU}}]]
-        script = """
-            {{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make config_experiment CPU={{CPU}}
-        """
-
-	[[clean_control_{{CPU}}]]
+	[[clean_{{group}}_{{CPU}}]]
 		script = """
-			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make clean_control CPU={{CPU}}
+			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make clean_{{group}} CPU={{CPU}}
 		"""
 
-	[[clean_experiment_{{CPU}}]]
+	[[build_{{group}}_{{CPU}}]]
 		script = """
-			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make clean_experiment CPU={{CPU}}
+			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make build_{{group}} CPU={{CPU}}
 		"""
 
-	[[build_control_{{CPU}}]]
+	[[run_{{group}}_{{CPU}}]]
 		script = """
-			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make build_control CPU={{CPU}}
+			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make run_{{group}} CPU={{CPU}}
 		"""
 
-	[[build_experiment_{{CPU}}]]
+	[[collect_{{group}}_{{CPU}}]]
 		script = """
-			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make build_experiment CPU={{CPU}}
+			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make collect_{{group}} CPU={{CPU}}
 		"""
 
-	[[run_control_{{CPU}}]]
+	[[fold_{{group}}_{{CPU}}]]
 		script = """
-			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make run_control CPU={{CPU}}
+			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make fold_{{group}} CPU={{CPU}}
 		"""
 
-	[[run_experiment_{{CPU}}]]
+	[[plot_{{group}}_{{CPU}}]]
 		script = """
-			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make run_experiment CPU={{CPU}}
+			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make plot_{{group}} CPU={{CPU}}
 		"""
 
-	[[collect_control_{{CPU}}]]
-		script = """
-			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make collect_control CPU={{CPU}}
-		"""
-
-	[[collect_experiment_{{CPU}}]]
-		script = """
-			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make collect_experiment CPU={{CPU}}
-		"""
-
-	[[fold_control_{{CPU}}]]
-		script = """
-			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make fold_control CPU={{CPU}}
-		"""
-
-	[[fold_experiment_{{CPU}}]]
-		script = """
-			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make fold_experiment CPU={{CPU}}
-		"""
-
-	[[plot_control_{{CPU}}]]
-		script = """
-			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make plot_control CPU={{CPU}}
-		"""
-
-	[[plot_experiment_{{CPU}}]]
-		script = """
-			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make plot_experiment CPU={{CPU}}
-		"""
-
+    {% endfor %}
 {% endfor %}
 
 [visualization]

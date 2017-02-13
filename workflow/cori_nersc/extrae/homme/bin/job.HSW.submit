@@ -6,6 +6,11 @@
 #SBATCH -L SCRATCH   #Job requires $SCRATCH file system
 #SBATCH -C haswell   #Use Haswell nodes
 
+export EXTRAE_HOME=/usr/common/software/extrae/3.3.0/hsw/intel
+export EXTRAE_CONFIG_FILE=extrae.xml
+export LD_PRELOAD=${EXTRAE_HOME}/lib/libompitracef.so # For Fortran apps
+
 export OMP_NUM_THREADS=1
 
+## Run the desired program
 srun -n 16 -c 2 $1 < $2
