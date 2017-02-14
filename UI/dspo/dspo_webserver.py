@@ -124,7 +124,7 @@ data_page = """<!DOCTYPE html>
 
     jQuery(function() {
         $('.datatree').bonsai({
-            expandAll: true,
+            expandAll: false,
             checkboxes: true, // depends on jquery.qubit plugin
             handleDuplicateCheckboxes: true // optional
         });
@@ -195,17 +195,20 @@ class DSPOPages(object):
                 else:
                     outstr += ' '*depth + '\n<ol>\n'
                 for key, value in indata.items():
+                    substr, itemid = gentree(value, itemid, depth+TAB)
+                    #outstr += '<li><input type="checkbox" value="%d" checked />%s:\n%s %s</li>'%
+                    outstr += '<li><input type="checkbox" value="%d" />%s:\n%s %s</li>'%\
+                        (itemid, key, ' '*depth, substr)
                     itemid += 1
-                    outstr += '<li><input type="checkbox" value="%d" checked />%s:\n%s %s</li>'%\
-                        (itemid, key, ' '*depth, gentree(value, itemid, depth+TAB))
                 outstr += ' '*depth + '</ol>\n'
             elif isinstance(indata, (list, tuple)):
                 if any(isinstance(subdata, (dict, list, tuple)) for subdata in indata):
                     outstr += ' '*depth + '<ol>\n'
                     if isinstance(indata, (dict, list, tuple)):
                         for subdata in indata:
+                            substr, itemid = gentree(value, itemid, depth+TAB)
+                            outstr += substr
                             itemid += 1
-                            outstr += gentree(subdata, itemid, depth+TAB)
                     else:
                         outstr += '%s\n'%str(indata)
                     outstr += ' '*depth + '</ol>\n'
@@ -213,7 +216,7 @@ class DSPOPages(object):
                     outstr += '%s\n'%str(indata)
             else:
                 outstr += '%s\n'%str(indata)
-            return outstr
+            return outstr, itemid
         try:
             checkjson(data)
             west = {}
@@ -226,8 +229,8 @@ class DSPOPages(object):
                 west[jid] = content.get('cgroup', {})
                 east[jid] = content.get('egroup', {})
             # merge common to west and east
-            westtree = gentree(west)
-            easttree = gentree(east)
+            westtree, numitems = gentree(west)
+            easttree, numitems = gentree(east)
         except Exception as e:
             tree = 'JOSN file check error: %s'%str(e)
         return _indent(data_page%{'sid': self.sid, 'westtree': westtree, 'easttree': easttree})
