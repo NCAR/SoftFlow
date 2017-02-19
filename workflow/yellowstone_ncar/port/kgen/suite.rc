@@ -1,0 +1,54 @@
+#!jinja2
+
+{% set TESTS = [ 'RRTMG', 'RRTMGP' ] %}
+{% set WAVES = [ 'SW', 'LW' ] %}
+{% set SCRIPTS = { 'RRTMG': 'f19c5aqportm-1d.sh', 'RRTMGP': 'f19c5aqrpportm-1d.sh' } %}
+
+title = "Task for generating longwave and shortwave kernels using KGen"
+
+[cylc]
+
+[scheduling]
+    [[dependencies]]
+        graph = """
+{% for TEST in TESTS %}
+	{% for WAVE in WAVES %}
+			preprocess => copy_extract_{{WAVE}}_{{TEST}} => extract_{{WAVE}}_{{TEST}}
+			####preprocess => copy_coverage_{{WAVE}}_{{TEST}} => coverage_{{WAVE}}_{{TEST}}
+	{% endfor %}
+{% endfor %}
+		"""
+
+[runtime]
+    [[preprocess]]
+        script = """
+            export TASKROOTDIR=`python -c "import os; print os.path.commonprefix([$CYLC_TASK_LOG_ROOT, $CYLC_TASK_WORK_DIR])"`
+            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make preprocess TASKROOTDIR=$TASKROOTDIR
+        """
+{% for TEST in TESTS %}
+	{% for WAVE in WAVES %}
+
+    [[copy_extract_{{WAVE}}_{{TEST}}]]
+        script = """
+            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make copy_extract_{{WAVE}}_{{TEST}}
+        """
+
+    [[copy_coverage_{{WAVE}}_{{TEST}}]]
+        script = """
+            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make copy_coverage_{{WAVE}}_{{TEST}}
+        """
+
+    [[extract_{{WAVE}}_{{TEST}}]]
+        script = """
+            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make extract_{{WAVE}}_{{TEST}}
+        """
+
+    [[coverage_{{WAVE}}_{{TEST}}]]
+        script = """
+            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make coverage_{{WAVE}}_{{TEST}}
+        """
+
+	{% endfor %}
+{% endfor %}
+
+[visualization]
