@@ -22,33 +22,35 @@ CGROUPDIR := ${WORKDIR}/cgroup
 EGROUPDIR := ${WORKDIR}/egroup
 #DATADIR := ${WORKDIR}/data
 
+EXTRAE_HOME ?= /global/homes/g/grnydawn/opt/extrae/3.4.1
+FOLDING_HOME ?= /global/homes/g/grnydawn/opt/folding/1.0.2
 
 #################
 # Cylc useful commands
 #################
 
-register:
+cylc_register:
 	cylc register ${SUITENAME} ${SUITEDIR}
 
-validate:
+cylc_validate:
 	cylc validate ${SUITENAME}
 
-graph:
+cylc_graph:
 	cylc graph ${SUITENAME}
 
-stop:
+cylc_stop:
 	cylc stop ${SUITENAME}
 
-ready:
+cylc_ready:
 	cylc reset -s ready ${SUITENAME} ${TASKID}
 
-run:
+cylc_run:
 	cylc run ${SUITENAME}
 
-monitor:
+cylc_monitor:
 	cylc monitor ${SUITENAME}
 
-rmport:
+cylc_rmport:
 	rm -f ${HOME}/.cylc/ports/${SUITENAME}
 
 #################
@@ -56,7 +58,7 @@ rmport:
 #################
 
 salloc:
-	salloc -N 1 -C haswell -p regular --qos=premium -t 08:00:00
+	salloc -N 1 -C haswell -p regular --qos=premium -t 08:00:00 -L SCRATCH
 
 ####################
 # Cylc Suite Targets
@@ -97,11 +99,11 @@ config_control:
         -DHDF5_DIR:PATH= ${HDF5_DIR} \
         -DHOMME_PROJID=NONE \
         -DENABLE_PERFTEST=TRUE \
-        -DENABLE_OPENMP=TRUE \
-        -DEXTRAE_LIB=ompitracef \
+        -DEXTRAE_LIB=mpitracef \
         -DEXTRAE_DIR:PATH=${EXTRAE_HOME} \
 		${CGROUPDIR}/homme
 
+        #-DENABLE_OPENMP=TRUE \
         #-DEXTRAE_DIR:PATH=/global/homes/g/grnydawn/opt/extrae/3.4.1 \
 
 config_experiment:
@@ -116,14 +118,14 @@ config_experiment:
         -DHDF5_DIR:PATH= ${HDF5_DIR} \
         -DHOMME_PROJID=NONE \
         -DENABLE_PERFTEST=TRUE \
-        -DENABLE_OPENMP=TRUE \
-        -DEXTRAE_LIB=ompitracef \
+        -DEXTRAE_LIB=mpitracef \
         -DEXTRAE_DIR:PATH=${EXTRAE_HOME} \
 		${EGROUPDIR}/homme
 
+        #-DENABLE_OPENMP=TRUE \
         #-DEXTRAE_DIR:PATH=/global/homes/g/grnydawn/opt/extrae/3.4.1 \
-		#-DADD_Fortran_FLAGS="-L${EXTRAE_HOME}/lib -l ompitracef" \
-		#-DADD_Fortran_FLAGS="-L${EXTRAE_HOME}/lib -l ompitracef" \
+		#-DADD_Fortran_FLAGS="-L${EXTRAE_HOME}/lib -l mpitracef" \
+		#-DADD_Fortran_FLAGS="-L${EXTRAE_HOME}/lib -l mpitracef" \
 
 clean_control:
 	@echo 'Begin clean_control'
@@ -160,16 +162,20 @@ run_experiment:
 		sbatch -W ${BINDIR}/job.${CPU}.submit ${EGROUPDIR}/build/test_execs/${TEST}/${TEST} ${TEST}.nl
 
 collect_control:
-	@echo 'Not implemented yet.'
+	@echo 'Begin collect_control'
 
 collect_experiment:
-	@echo 'Not implemented yet.'
+	@echo 'Begin collect_experiment'
 
 fold_control:
-	@echo 'Not implemented yet.'
+	@echo 'Begin fold_control'
+	cd ${CGROUPDIR}/run; \
+		${FOLDING_HOME}/bin/folding ./${TEST}.prv "User function"
 
 fold_experiment:
-	@echo 'Not implemented yet.'
+	@echo 'Begin fold_experiment'
+	cd ${EGROUPDIR}/run; \
+		${FOLDING_HOME}/bin/folding ./${TEST}.prv "User function"
 
 plot_control:
 	@echo 'Not implemented yet.'

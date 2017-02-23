@@ -7,6 +7,11 @@
 TMPDIR := /global/cscratch1/sd/grnydawn
 EXTRAETMPDIR := ${TMPDIR}/extraeinstall
 
+# Folding
+# https://ftp.tools.bsc.es/folding/folding-1.0.2-src.tar.bz2
+FOLDING_VERSION := 1.0.2
+FOLDING_INSTALLDIR := ${HOME}/opt/folding/${FOLDING_VERSION}
+
 # Extrae
 # https://ftp.tools.bsc.es/extrae/extrae-3.4.1-src.tar.bz2
 EXTRAE_VERSION := 3.4.1
@@ -92,6 +97,10 @@ install-extrae:
 		--with-papi=/opt/cray/pe/papi/5.4.3.3 --without-dyninst
 	cd ${EXTRAETMPDIR}/extrae-${EXTRAE_VERSION}; make -j 8 install
 
+install-folding:
+	cd ${EXTRAETMPDIR}/folding-${FOLDING_VERSION}-intelx86-64; \
+		mkdir -p ${FOLDING_INSTALLDIR}; cp -rf * ${FOLDING_INSTALLDIR}
+
 ###################
 # Download software	
 ###################
@@ -134,6 +143,12 @@ download-extrae: create_tmpdir
 	cd ${EXTRAETMPDIR}; bzip2 -d ./extrae-${EXTRAE_VERSION}-src.tar.bz2
 	cd ${EXTRAETMPDIR}; tar -xvf ./extrae-${EXTRAE_VERSION}-src.tar
 	cd ${EXTRAETMPDIR}; rm -f ./extrae-${EXTRAE_VERSION}-src.tar
+
+download-folding: create_tmpdir
+	cd ${EXTRAETMPDIR}; wget "https://ftp.tools.bsc.es/folding/folding-${FOLDING_VERSION}-linux_x86_64.tar.bz2"
+	cd ${EXTRAETMPDIR}; bzip2 -d ./folding-${FOLDING_VERSION}-linux_x86_64.tar.bz2
+	cd ${EXTRAETMPDIR}; tar -xvf ./folding-${FOLDING_VERSION}-linux_x86_64.tar
+	cd ${EXTRAETMPDIR}; rm -f ./folding-${FOLDING_VERSION}-linux_x86_64.tar
 
 ###############
 # Miscellaneous
