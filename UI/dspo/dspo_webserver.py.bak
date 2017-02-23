@@ -1,0 +1,250 @@
+from BaseHTTPServer import BaseHTTPRequestHandler
+import os
+import sys
+import urlparse
+import urllib
+import logging
+import uuid
+import json
+
+curdir = os.path.dirname(os.path.realpath(__file__))
+sep = '/'
+TAB = 4
+
+t_page = """<!DOCTYPE html>
+%(html)s"""
+
+t_html = """
+<html>
+    %(head)s
+    %(body)s
+</html>"""
+
+t_head = """
+<head>
+    <title>%(title)s</title>
+    <link rel="stylesheet" type="text/css" href="css/dspo.css">
+    <script type="text/javascript" src="js/dspo.js" ></script>
+    <script src="js/jquery-latest.js"></script>
+    <script type="text/javascript" src="js/jquery-ui-latest.js"></script>
+    <script src="js/jquery.layout-latest.js"></script>
+    <link type="text/css" rel="stylesheet" href="css/layout-default-latest.css" />
+    <script>
+        $(document).ready(function () {
+            $('#content').layout();
+        });
+    </script>
+    <style type="text/css">
+    html, body {
+        background: #666;
+        width:      100%%;
+        height:     100%%;                   
+        padding:    0;
+        margin:     0;
+        overflow:   auto; /* when page gets too small */
+    }
+    #content {
+        background: #999;
+        height:     100%%;
+        margin:     0 auto;
+        width:      100%%;
+        max-width:  900px;
+        min-width:  700px;
+        _width:     700px; /* min-width for IE6 */
+    }
+    .pane {
+        display:    none; /* will appear when layout inits */
+    }
+    </style>
+
+</head>"""
+
+t_body = """
+<body>
+    %(divmain)s
+    %(divnav)s
+    <img id="topleft" src="img/triangle-top-left.png" alt="Open side menu" height="50" width="50" onclick="openNav()">
+    <a href="exit"><img id="topright" src="img/triangle-top-right.png" alt="Exit" height="50" width="50"></a>
+</body>"""
+
+t_divmain = """
+<div id="main">
+    %(content)s
+</div>"""
+
+t_divnav = """
+<div id="mySidenav" class="sidenav">
+    <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+    %(menu)s
+</div>"""
+
+c_new = """
+<div id='content'>
+    <h1 >Learn From Controlled Experiments</h1>
+    <h3><p><em>Within this tool</em>, complex software performance data can be easily explored and analyzed.</h3>
+
+    <hr width="50%%">
+
+    <br><br>%(msg)s<br>
+    <h3>Load new experiment data</h3>
+    <form id="welcome-form" method="GET" action="/data">
+            <input type="hidden" name="sid" value='%(sid)s'>
+            <input id="input_load" type="text" name="datapath" value='/Users/youngsun/trepo/temp/result.json'>
+            <input id="submit_load" type="submit" value='Submit'>
+    </form>
+</div> """
+
+c_data = """
+<div id='content'>
+    <div class="ui-layout-center">Center
+        <p><a href="http://layout.jquery-dev.com/demos.html">Go to the Demos page</a></p>
+        <p>* Pane-resizing is disabled because ui.draggable.js is not linked</p>
+        <p>* Pane-animation is disabled because ui.effects.js is not linked</p>
+    </div>
+    <div class="ui-layout-north">North</div>
+    <div class="ui-layout-south">South</div>
+    <div class="ui-layout-east">East</div>
+    <div class="ui-layout-west">West</div>
+</div> """
+
+c_msg = '<p style="padding: 10px; color: red; border: black 2px solid">%s</p>'
+
+def _indent(lines):
+    return ' '*TAB + lines.replace('\n', '\n'+' '*TAB)
+
+class DSPOPages(object):
+    def __init__(self):
+        self.sid = str(uuid.uuid1())
+        self.lastpage = None
+        self.jsondata = None
+
+    def genc_new(self, msg='' ):
+        return _indent(c_new%{'msg': msg, 'sid': self.sid})
+
+    def genc_data(self, msg='' ):
+        return _indent(c_data%{'msg': msg, 'sid': self.sid})
+
+    def genpage(self, path, params):
+        return t_page%{'html': self.genhtml(path, params) }
+
+    def genhtml(self, path, params):
+        return t_html%{ 'head': self.genhead(path, params), 'body': self.genbody(path, params)}
+
+    def genhead(self, path, params):
+        return _indent(t_head%{ 'title': 'TITLE' })
+
+    def genbody(self, path, params):
+        return _indent(t_body%{'divmain': self.gendivmain(path, params), 'divnav': self.gendivnav(path, params)})
+
+    def gendivmain(self, path, params):
+
+        content = 'CONTENT'
+
+        if path == '/':
+            msg = ''
+            sidmsg = params.get('sid', '')
+            if sidmsg == 'notexist':
+                msg = c_msg%"Session does not exist. Please reload experiment data."
+            elif sidmsg == 'notfound':
+                msg = c_msg%"Session could not be found. Please reload experiment data."
+            content = self.genc_new(msg=msg)
+        elif path == '/data':
+            # data file
+            try:
+                datapath = urllib.unquote(params['datapath']).decode('utf8')
+                logging.warning(datapath)
+                with open(datapath) as jfile:    
+                    data = json.load(jfile)
+                content = self.genc_data()
+            except Exception as e:
+                msg = c_msg%'"%s<br>%s" could not be found. Please check file path.'%(str(e), datapath)
+                content = self.genc_new(msg=msg)
+            # generate summary page
+        else:
+            logging.warning("%s is not supported yet."%path)
+
+        return _indent(t_divmain%{ 'content': content })
+
+    def gendivnav(self, path, params):
+
+        menuitems = [ \
+            '<a href="/new">New</a>' \
+        ]
+
+        return _indent(t_divnav%{ 'menu': '\n'.join(menuitems) })
+
+class DSPOWebServer(BaseHTTPRequestHandler):
+
+    def _set_headers(self, mimetype='text/html'):
+        self.send_response(200)
+        self.send_header('Content-type', mimetype)
+        self.end_headers()
+
+    def do_GET(self):
+        try:
+            sendReply = False
+            if self.path=='/favicon.ico':
+                return
+            if self.path.endswith(".jpg"):
+                mimetype='image/jpg'
+                sendReply = True
+            if self.path.endswith(".gif"):
+                mimetype='image/gif'
+                sendReply = True
+            if self.path.endswith(".png"):
+                mimetype='image/png'
+                sendReply = True
+            if self.path.endswith(".js"):
+                mimetype='application/javascript'
+                sendReply = True
+            if self.path.endswith(".css"):
+                mimetype='text/css'
+                sendReply = True
+
+            if sendReply == True:
+                f = open(curdir + sep + self.path)
+                self._set_headers(mimetype)
+                self.wfile.write(f.read())
+                f.close()
+            else:
+                query = self.path.split("?")
+                path = query[0]
+                params = {}
+                if len(query) > 1:
+                    params = dict(urlparse.parse_qsl(query[1], True, True))
+
+                #logging.warning('%s %s %s'%(query, path, str(params)))
+
+                self._set_headers()
+
+                newsession = False
+
+                if 'sid' in params:
+                    if params['sid'] in self.server.session:
+                        self.wfile.write(self.server.session[params['sid']].genpage(path, params))
+                    else:
+                        path = '/'
+                        params['sid'] = 'notfound'
+                        newsession = True
+                else:
+                    newsession = True
+                    if path != '/':
+                        path = '/'
+                        params['sid'] = 'notexist'
+
+                if newsession:
+                    gen = DSPOPages()
+                    self.server.session[gen.sid] = gen
+                    self.wfile.write(gen.genpage(path, params))
+
+        except IOError:
+            self.send_error(404,'File Not Found: %s' % self.path)
+
+
+    def do_HEAD(self):
+        self._set_headers()
+
+    def do_POST(self):
+        # Doesn't do anything with posted data
+        self._set_headers()
+        self.wfile.write("<html><body><h1>POST is not supported!</h1></body></html>")
