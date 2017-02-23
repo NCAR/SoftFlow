@@ -6,6 +6,7 @@ import json
 from scipy import stats
 from ulparser import ULParser
 from sfutil import openjson
+import random
 
 logspecxml = """<?xml version="1.0"?>
 <Log>
@@ -51,11 +52,23 @@ def main():
                     if item.__class__.__name__ == 'TimePerCall':
                         testdata[idx][datafile].append(float(item.timepercall))
                         break
-    ttests = []
+
+
+    blist = []
+    flist = []
     for datafile, baseline in testdata[0].items():
-        t, p = stats.ttest_rel(baseline, testdata[1][datafile])
-        ttests.append([float(t), float(p)])
-        print "The t-statistic is %.3f and the p-value is %.3f." % (t, p)
+        blist.extend(baseline)
+        flist.extend(testdata[1][datafile])
+    random.shuffle(blist)
+    random.shuffle(flist)
+    t, p = stats.ttest_rel(blist, flist)
+    print "The t-statistic is %.3f and the p-value is %.3f." % (t, p)
+    ttests = [abs(float(t)), float(p)]
+
+#    for datafile, baseline in testdata[0].items():
+#        t, p = stats.ttest_rel(baseline, testdata[1][datafile])
+#        ttests.append([float(t), float(p)])
+#        print "The t-statistic is %.3f and the p-value is %.3f." % (t, p)
 
     if len(sys.argv) >= 6:
         with openjson(sys.argv[4], 'r') as jsonfile:
