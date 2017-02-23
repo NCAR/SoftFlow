@@ -2,7 +2,32 @@
 
 {% set TESTS = [ 'RRTMG', 'RRTMGP' ] %}
 {% set WAVES = [ 'SW', 'LW' ] %}
-{% set SCRIPTS = { 'RRTMG': 'f19c5aqportm-1d.sh', 'RRTMGP': 'f19c5aqrpportm-1d.sh' } %}
+#{% set ACTIONS = [ 'extract', 'coverage' ] %}
+{% set ACTIONS = [ 'extract' ] %}
+{% set SCRIPTS = { 'RRTMG': 'f19c5aqportm', 'RRTMGP': 'f19c5aqrpportm' } %}
+{% set SRCPATH = 'src/components/cam/src/physics/' %}
+{% set INVOKES = {
+	'RRTMG': {
+		'SW': '0:0:1,10:0:179,3:0:119,0:0:0,14:0:55,1:0:1',
+		'LW': '11:0:55,9:0:55,0:0:0,0:0:1,1:0:1'
+	},
+	'RRTMGP': {
+		'SW': '7:0:182,0:0:0,0:0:1,1:0:1',
+		'LW': '7:0:181,0:0:0,0:0:1' 
+		}
+	}
+%}
+{% set CALLSITES = { 
+	'RRTMG': { 
+		'SW': SRCPATH +'rrtmg/radsw.F90:radsw:rad_rrtmg_sw:rrtmg_sw', 
+		'LW': SRCPATH +'rrtmg/radlw.F90:radlw:rad_rrtmg_lw:rrtmg_lw' 
+		},
+	'RRTMGP': { 
+		'SW': SRCPATH + 'rrtmgp/radiation.F90:radiation:radiation_tend:rrtmgp_sw', 
+		'LW': SRCPATH + 'rrtmgp/radiation.F90:radiation:radiation_tend:rrtmgp_lw' 
+		} 
+	} 
+%}
 
 title = "Task for generating longwave and shortwave kernels using KGen"
 
@@ -13,42 +38,36 @@ title = "Task for generating longwave and shortwave kernels using KGen"
         graph = """
 {% for TEST in TESTS %}
 	{% for WAVE in WAVES %}
-			preprocess => copy_extract_{{WAVE}}_{{TEST}} => extract_{{WAVE}}_{{TEST}}
-			####preprocess => copy_coverage_{{WAVE}}_{{TEST}} => coverage_{{WAVE}}_{{TEST}}
+		{% for ACTION in ACTIONS %}
+			preprocess => copy_{{ACTION}}_{{WAVE}}_{{TEST}} => run_{{ACTION}}_{{WAVE}}_{{TEST}}
+		{% endfor %}
 	{% endfor %}
 {% endfor %}
 		"""
 
+#export TASKROOTDIR=`python -c "import os; print os.path.commonprefix(['$CYLC_TASK_LOG_ROOT', '$CYLC_TASK_WORK_DIR'])"`
+
 [runtime]
     [[preprocess]]
         script = """
-            export TASKROOTDIR=`python -c "import os; print os.path.commonprefix([$CYLC_TASK_LOG_ROOT, $CYLC_TASK_WORK_DIR])"`
-            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make preprocess TASKROOTDIR=$TASKROOTDIR
         """
 {% for TEST in TESTS %}
 	{% for WAVE in WAVES %}
+		{% for ACTION in ACTIONS %}
 
-    [[copy_extract_{{WAVE}}_{{TEST}}]]
+    [[copy_{{ACTION}}_{{WAVE}}_{{TEST}}]]
         script = """
-            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make copy_extract_{{WAVE}}_{{TEST}}
+            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make copy ACTION={{ACTION}} WAVE={{WAVE}} TEST={{TEST}}
         """
 
-    [[copy_coverage_{{WAVE}}_{{TEST}}]]
+    [[run_{{ACTION}}_{{WAVE}}_{{TEST}}]]
         script = """
-            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make copy_coverage_{{WAVE}}_{{TEST}}
+			make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make run ACTION={{ACTION}} WAVE={{WAVE}} TEST={{TEST}} SCRIPT={{SCRIPTS[TEST]}} INVOKE={{INVOKES[TEST][WAVE]}} CALLSITE={{CALLSITES[TEST][WAVE]}}
         """
 
-    [[extract_{{WAVE}}_{{TEST}}]]
-        script = """
-            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make extract_{{WAVE}}_{{TEST}}
-        """
-
-    [[coverage_{{WAVE}}_{{TEST}}]]
-        script = """
-            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make coverage_{{WAVE}}_{{TEST}}
-        """
-
+		{% endfor %}
 	{% endfor %}
 {% endfor %}
 
 [visualization]
+

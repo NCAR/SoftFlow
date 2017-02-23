@@ -11,11 +11,8 @@ KGEN := /glade/u/home/youngsun/repos/github/KGen
 
 WORKDIR := /glade/scratch/youngsun/cylcworkdir/port
 MAKEFILEDIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-BINDIR := ${MAKEFILEDIR}
 SUITEDIR := ${MAKEFILEDIR}/..
-SOFTFLOWDIR := ${SUITEDIR}/../../../../lib/python
 INCDIR := ${SUITEDIR}/inc
-PYTHONDIR := ${SUITEDIR}/lib/python:${SOFTFLOWDIR}
 
 #PRERUN_EXTRACT := "cd ${KGEN}; git checkout devel"
 PRERUN_EXTRACT := "true"
@@ -26,100 +23,55 @@ PRERUN_COVERAGE := "true"
 # Cylc useful commands
 #################
 
-register:
+cylc_register:
 	cylc register ${SUITENAME} ${SUITEDIR}
 
-validate:
+cylc_validate:
 	cylc validate ${SUITENAME}
 
-graph:
+cylc_graph:
 	cylc graph ${SUITENAME}
 
-stop:
+cylc_stop:
 	cylc stop ${SUITENAME}
 
-ready:
+cylc_ready:
 	cylc reset -s ready ${SUITENAME} ${TASKID}
 
-run:
+cylc_run:
 	cylc run ${SUITENAME}
 
-monitor:
+cylc_monitor:
 	cylc monitor ${SUITENAME}
 
-rmport:
+cylc_rmport:
 	rm -f ${HOME}/.cylc/ports/${SUITENAME}
 
 ####################
 # Cylc Suite Targets
 ####################
 
-preprocess:
-	@echo 'Begin preprocess'
+copy:
+	@echo 'Copying ${ACTION}_${WAVE}_${TEST}'
+	mkdir -p ${WORKDIR}/${ACTION}_${WAVE}_${TEST}/src
+	cp -R -u -p ${PORT}/* ${WORKDIR}/${ACTION}_${WAVE}_${TEST}/src
+ifeq (${ACTION},extract)
+ifeq (${TEST},RRTMGP)
+	cp -f ${INCDIR}/radiation.F90 ${WORKDIR}/${ACTION}_${WAVE}_${TEST}/src/components/cam/src/physics/rrtmgp
+	cp -f ${INCDIR}/mo_rrtmgp_sw.F90 ${WORKDIR}/${ACTION}_${WAVE}_${TEST}/src/components/cam/src/physics/rrtmgp/ext
+	cp -f ${INCDIR}/mo_rrtmgp_lw.F90 ${WORKDIR}/${ACTION}_${WAVE}_${TEST}/src/components/cam/src/physics/rrtmgp/ext
+endif
+endif
 
-copy_extract_SW_RRTMG:
-	@echo 'Begin copy_extract_SW_RRTMG'
-	mkdir -p ${WORKDIR}/extract_SW_RRTMG/src
-	cp -R -u -p ${PORT}/* ${WORKDIR}/extract_SW_RRTMG/src
-
-copy_extract_LW_RRTMG:
-	@echo 'Begin copy_extract_LW_RRTMG'
-
-copy_extract_SW_RRTMGP:
-	@echo 'Begin copy_extract_SW_RRTMGP'
-
-copy_extract_LW_RRTMGP:
-	@echo 'Begin copy_extract_LW_RRTMGP'
-
-copy_coverage_SW_RRTMG:
-	@echo 'Begin copy_coverage_SW_RRTMG'
-
-copy_coverage_LW_RRTMG:
-	@echo 'Begin copy_coverage_LW_RRTMG'
-
-copy_coverage_SW_RRTMGP:
-	@echo 'Begin copy_coverage_SW_RRTMGP'
-
-copy_coverage_LW_RRTMGP:
-	@echo 'Begin copy_coverage_LW_RRTMGP'
-
-extract_SW_RRTMG:
-	@echo 'Begin extract_SW_RRTMG'
-	${PRERUN_EXTRACT}; cd ${WORKDIR}/extract_SW_RRTMG; ${KGEN}/bin/kgen \
-		--cmd-clean "true" \
-		--cmd-build "cd ${WORKDIR}/extract_SW_RRTMG/src; export CYLC_CAM_ROOT=${WORKDIR}/extract_SW_RRTMG/src; export CYLC_WRKDIR=${WORKDIR}/extract_SW_RRTMG; ./f19c5aqportm-1d.sh -b" \
-		--cmd-run "cd ${WORKDIR}/extract_SW_RRTMG/src; export CYLC_CAM_ROOT=${WORKDIR}/extract_SW_RRTMG/src; export CYLC_WRKDIR=${WORKDIR}/extract_SW_RRTMG; bsub -K < f19c5aqportm-1d.sh" \
+run:
+	@echo 'Running ${ACTION}_${WAVE}_${TEST}'
+	${PRERUN_EXTRACT}; cd ${WORKDIR}/${ACTION}_${WAVE}_${TEST}; ${KGEN}/bin/kgen \
+		--cmd-clean "rm -rf ${WORKDIR}/${ACTION}_${WAVE}_${TEST}/${SCRIPT}_intel_bld/*" \
+		--cmd-build "cd ${WORKDIR}/${ACTION}_${WAVE}_${TEST}/src; export CYLC_CAM_ROOT=${WORKDIR}/${ACTION}_${WAVE}_${TEST}/src; export CYLC_WRKDIR=${WORKDIR}/${ACTION}_${WAVE}_${TEST}; ./${SCRIPT}-1d.sh -b" \
+		--cmd-run "cd ${WORKDIR}/${ACTION}_${WAVE}_${TEST}/src; export CYLC_CAM_ROOT=${WORKDIR}/${ACTION}_${WAVE}_${TEST}/src; export CYLC_WRKDIR=${WORKDIR}/${ACTION}_${WAVE}_${TEST}; bsub -K < ${SCRIPT}-1d.sh" \
 		-e "/glade/u/home/youngsun/repos/github/SoftFlow/workflow/yellowstone_ncar/port/kgen/inc/exclude.ini" \
-		--outdir ${WORKDIR}/extract_SW_RRTMG/kernel \
-		--invocation 0:0:1,1:0:1 \
+		--outdir ${WORKDIR}/${ACTION}_${WAVE}_${TEST}/output \
+		--invocation ${INVOKE} \
 		--timing repeat=10 \
 		--mpi enable \
-		${WORKDIR}/extract_SW_RRTMG/src/components/cam/src/physics/rrtmg/radiation.F90:radiation:radiation_tend:rad_rrtmg_sw
-
-extract_LW_RRTMG:
-	@echo 'Begin extract_LW_RRTMG'
-	#${PRERUN_EXTRACT}; ${KGEN}/bin/kgen \
-
-extract_SW_RRTMGP:
-	@echo 'Begin extract_SW_RRTMGP'
-	#${PRERUN_EXTRACT}; ${KGEN}/bin/kgen \
-
-extract_LW_RRTMGP:
-	@echo 'Begin extract_LW_RRTMGP'
-	#${PRERUN_EXTRACT}; ${KGEN}/bin/kgen \
-
-coverage_SW_RRTMG:
-	@echo 'Begin coverage_SW_RRTMG'
-	#${PRERUN_COVERAGE}; ${KGEN}/bin/kgen \
-
-coverage_LW_RRTMG:
-	@echo 'Begin coverage_LW_RRTMG'
-	#${PRERUN_COVERAGE}; ${KGEN}/bin/kgen \
-
-coverage_SW_RRTMGP:
-	@echo 'Begin coverage_SW_RRTMGP'
-	#${PRERUN_COVERAGE}; ${KGEN}/bin/kgen \
-
-coverage_LW_RRTMGP:
-	@echo 'Begin coverage_LW_RRTMGP'
-	#${PRERUN_COVERAGE}; ${KGEN}/bin/kgen \
+		${WORKDIR}/${ACTION}_${WAVE}_${TEST}/${CALLSITE}
