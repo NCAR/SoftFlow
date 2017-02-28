@@ -2,7 +2,7 @@
 
 <trace enabled="yes"
  home="/usr/common/software/extrae/3.3.0/hsw/intel"
- initial-mode="bursts"
+ initial-mode="detail"
  type="paraver"
  xml-parser-id="Id: xml-parse.c 3918 2016-03-11 14:59:01Z harald $"
 >
