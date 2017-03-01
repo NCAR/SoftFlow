@@ -1,0 +1,72 @@
+#!jinja2
+
+{% set CPUS = [ 'HSW' ] %}
+{# set CPUS = [ 'KNL', 'HSW' ] #}
+{% set CONSTRAINTS = { 'KNL': 'knl,quad,flat', 'HSW': 'haswell' } %}
+{% set PRERUN= { 'KNL': 'module swap craype-haswell craype-mic-knl; module load cmake; module load cray-hdf5/1.10.0; module load cray-netcdf; export CRAYPE_LINK_TYPE=dynamic', 'HSW': 'module load craype-haswell; module load cmake; module load cray-hdf5/1.10.0; module load cray-netcdf; module load extrae/3.3.0; export CRAYPE_LINK_TYPE=dynamic' } %}
+{% set groups = [ 'control', 'experiment' ] %}
+
+title = "Task for running Extrae"
+
+[cylc]
+
+[scheduling]
+	[[dependencies]]
+		graph = """
+{% for CPU in CPUS %}
+    {% for group in groups  %}
+			preprocess => copy_{{group}}_{{CPU}} =>
+			clean_{{group}}_{{CPU}} => build_{{group}}_{{CPU}} => run_{{group}}_{{CPU}} =>
+			collect_{{group}}_{{CPU}} => fold_{{group}}_{{CPU}} => plot_{{group}}_{{CPU}}
+    {% endfor %}
+{% endfor %}
+		"""
+
+[runtime]
+    [[preprocess]]
+        script = """
+			export TASKROOTDIR=`python -c "import os; print os.path.commonprefix([$CYLC_TASK_LOG_ROOT, $CYLC_TASK_WORK_DIR])"`
+            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make preprocess TASKROOTDIR=$TASKROOTDIR
+        """
+{% for CPU in CPUS %}
+    {% for group in groups  %}
+
+    [[copy_{{group}}_{{CPU}}]]
+        script = """
+            {{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make copy_{{group}} CPU={{CPU}}
+        """
+
+	[[clean_{{group}}_{{CPU}}]]
+		script = """
+			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make clean_{{group}} CPU={{CPU}}
+		"""
+
+	[[build_{{group}}_{{CPU}}]]
+		script = """
+			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make build_{{group}} CPU={{CPU}}
+		"""
+
+	[[run_{{group}}_{{CPU}}]]
+		script = """
+			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make run_{{group}} CPU={{CPU}}
+		"""
+
+	[[collect_{{group}}_{{CPU}}]]
+		script = """
+			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make collect_{{group}} CPU={{CPU}}
+		"""
+
+	[[fold_{{group}}_{{CPU}}]]
+		script = """
+			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make fold_{{group}} CPU={{CPU}}
+		"""
+
+	[[plot_{{group}}_{{CPU}}]]
+		script = """
+			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make plot_{{group}} CPU={{CPU}}
+		"""
+
+    {% endfor %}
+{% endfor %}
+
+[visualization]
