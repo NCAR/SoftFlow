@@ -25,4 +25,4 @@ Strategies
 
 - Use a workflow engine(Cylc_)
 - Drive workflows by scripts
-- Keep it simple, stupid
+- Simpler is better
