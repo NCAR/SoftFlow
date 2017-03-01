@@ -1,0 +1,15 @@
+#!/bin/bash -l
+
+#SBATCH -N 1         #Use 1 node
+#SBATCH -t 00:30:00  #Set 30 minute time limit
+#SBATCH -p debug     #Submit to the debug 'partition'
+#SBATCH -L SCRATCH   #Job requires $SCRATCH file system
+#SBATCH -C haswell   #Use Haswell nodes
+
+export EXTRAE_HOME=/usr/common/software/extrae/3.3.0/hsw/intel
+export EXTRAE_CONFIG_FILE=extrae.xml
+#export LD_PRELOAD=${EXTRAE_HOME}/lib/libmpitracef.so # For Fortran apps
+export LD_LIBRARY_PATH=${EXTRAE_HOME}/lib:${LD_LIBRARY_PATH}
+
+## Run the desired program
+srun -n 1 -c 1 $1
