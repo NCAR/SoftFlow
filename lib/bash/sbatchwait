@@ -1,0 +1,15 @@
+#!/usr/bin/bash
+
+# bsub job wait script
+# usage: sbatchwait <sbatch arguments and options>
+
+line=$(sbatch $*)
+words=($line)
+jobid=${words[-1]}
+
+while [ "$(squeue -h -j ${jobid})" ]
+do
+	printf .
+	sleep 10
+done
+echo ""
