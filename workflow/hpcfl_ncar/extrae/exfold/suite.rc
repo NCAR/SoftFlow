@@ -13,9 +13,9 @@ title = "Task for generating Extrae Folding plots"
 		graph = """
 {% for CPU in CPUS %}
 			preprocess => copy_control_{{CPU}} => clean_control_{{CPU}} => build_control_{{CPU}} => run_control_{{CPU}}
-			run_control_{{CPU}} => collect_control_{{CPU}} & copy_experiment_{{CPU}}
+			run_control_{{CPU}} => collect_control_{{CPU}} & run_experiment_{{CPU}}
 			collect_control_{{CPU}} => fold_control_{{CPU}} => plot_{{CPU}}
-			copy_experiment_{{CPU}} => clean_experiment_{{CPU}} => build_experiment_{{CPU}} => run_experiment_{{CPU}}
+			preprocess => copy_experiment_{{CPU}} => clean_experiment_{{CPU}} => build_experiment_{{CPU}} => run_experiment_{{CPU}}
 			run_experiment_{{CPU}} => collect_experiment_{{CPU}} => fold_experiment_{{CPU}} => plot_{{CPU}}
 
 {% endfor %}
