@@ -206,8 +206,17 @@ def gen_summarypage():
     for counter in counters:
         listcnts.append(counter)
         strcnts = ', '.join(listcnts)
-        if len(strcnts) < 50: continue
+        if len(strcnts) < 45: continue
         yloc += 0.05
+        if yloc > 0.9:
+            ax.axis('off')
+            fig.tight_layout()
+            pdf.savefig(fig)
+
+            fig, ax = plt.subplots(figsize=(8, 6))
+            ax.axis([0, 1, 1, 0])
+            yloc = 0.1
+          
         ax.text(0.1, yloc, '- %s'%strcnts, fontsize=TEXT_SIZE, horizontalalignment='left')
         listcnts = []
 
