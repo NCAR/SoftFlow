@@ -5,7 +5,6 @@ FC :=
 FC_0 := /usr/local/intel/2017/compilers_and_libraries_2017.0.098/linux/bin/intel64/ifort
 FC_FLAGS := 
 FC_FLAGS_SET_0 := -g -ftz -convert big_endian -fp-model source -no-opt-dynamic-align -assume realloc_lhs -xHost -O2
-#FC_FLAGS_SET_0 := -g -ftz -convert big_endian -fp-model fast -no-opt-dynamic-align -assume realloc_lhs -xHost -O3 -xAVX
 
 EXTRAE_DIR := /ncar/asap/opt/extrae/3.3.0/snb/intel/17.0.0
 FC_LINK_FLAGS := -L${EXTRAE_DIR}/lib -Wl,-rpath=${EXTRAE_DIR}/lib -lseqtrace -L/ncar/asap/opt/papi/5.4.1/snb/intel/15.0.0/lib -Wl,-rpath=/ncar/asap/opt/papi/5.4.1/snb/intel/15.0.0/lib -lpapi -L/ncar/asap/opt/libxml2/2.9.2/snb/intel/15.0.0/lib -Wl,-rpath=/ncar/asap/opt/libxml2/2.9.2/snb/intel/15.0.0/lib -lxml2 -L/ncar/asap/opt/libunwind/1.1/snb/intel/15.0.0/lib -Wl,-rpath=/ncar/asap/opt/libunwind/1.1/snb/intel/15.0.0/lib -lunwind

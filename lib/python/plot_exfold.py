@@ -39,6 +39,7 @@ def parse_args():
     parser = ArgumentParser(description='Plotting Extrae folding results')
     parser.add_argument('folddirs', metavar='folding-dir', type=str, nargs='+', help='Directory containing folded Extrae raw data')
     parser.add_argument('-e', '--event', dest='event', type=str, action='append', default=None, help='Events to use (default: all events)')
+    parser.add_argument('-t', '--time', dest='etime', action='store_true', default=False, help='Add elapsed time in plot (default: No)')
     #parser.add_argument('--sum', dest='accumulate', action='store_const', const=sum, default=max, help='sum the integers (default: find the max)')
 
     args = parser.parse_args()
@@ -52,10 +53,20 @@ def parse_args():
             for evt in evts.split(','):
                 events.append(evt)
         cfg['events'] = events
-   
+  
     # folding dirs
     folddirs = []
     cfg['folddirs'] = folddirs
+
+     # app name
+    flags = OrderedDict()
+    cfg['flags'] = flags
+
+    if args.etime:
+        flags['etime'] = args.etime
+
+     # app name
+    cfg['appnames'] = OrderedDict()
 
     # csvfiles
     csvfiles = OrderedDict()
@@ -69,7 +80,16 @@ def parse_args():
     systems = []
     cfg['systems'] = systems
 
-    for folddir in args.folddirs:
+    for folddirpair in args.folddirs:
+        fsplit = folddirpair.split(':')
+        if len(fsplit) == 2:
+            cfg['appnames'][fsplit[0]] = fsplit[1]
+            folddir = fsplit[0]
+        elif len(fsplit) == 1:
+            folddir = fsplit[0]
+        else:
+            raise Exception('Wrong format of folding data path: %s'%folddirpair)
+
         if not os.path.exists(folddir):
             print ('ERROR: can not find input file: %s'%folddir)
             sys.exit(-1)
@@ -125,14 +145,18 @@ def read_data():
                     counter = csvdata[ row['counter'] ]
 
                 # region
-                if row['region'] not in counter:
-                    region = OrderedDict()
-                    counter[ row['region'] ] = region
+                if absfolddir in cfg['appnames']:
+                    region_name = cfg['appnames'][absfolddir]
                 else:
-                    region = counter[ row['region'] ]
+                    region_name = row['region']
+                if region_name not in counter:
+                    region = OrderedDict()
+                    counter[ region_name ] = region
+                else:
+                    region = counter[ region_name ]
 
                 if absfolddir not in regions:
-                    regions[absfolddir] = row['region']
+                    regions[absfolddir] = region_name
 
                 # xval and yval
                 xval = float(row['xval'])
@@ -144,7 +168,7 @@ def read_data():
                         region[ xval ] = 0
                     else:
                         region[ xval ] = yval
-                else:
+                elif absfolddir not in cfg['appnames']:
                     raise Exception('Dupulicated values: %s from %s.'%(str(row), csvfile))
 
     #import pdb; pdb.set_trace()
@@ -177,7 +201,7 @@ def gen_summarypage():
     ax.text(0.05, yloc, '[ Data ]', fontsize=SUBTITLE_SIZE, horizontalalignment='left')
 
     for idx, folddir in enumerate(cfg['folddirs']):
-        line = '%s(%s ms): %s'%(cfg['regions'][folddir], cfg['etimes'][folddir], folddir)
+        line = '%s (%s ms): %s'%(cfg['regions'][folddir], cfg['etimes'][folddir], folddir)
         yloc += 0.05
         if len(line) > 60:
             ax.text(0.1, yloc, '- %s'%line[:60], fontsize=TEXT_SIZE, horizontalalignment='left')
@@ -276,7 +300,10 @@ def gen_plotpages():
         for idx, (region, (xvals, yvals)) in enumerate(plotdata.items()):
             plot = ax2.plot([x*100 for x in xvals], yvals, color=colors[idx], linewidth=LINEWIDTH)
             plots.append(plot[0])
-            labels.append(region)
+            if cfg['flags'].get('etime', False):
+                labels.append('%s (%s ms)'%(region, cfg['etimes'][cfg['folddirs'][idx]]))
+            else:
+                labels.append(region)
 
         plt.legend(plots, labels)
         #fig.tight_layout()

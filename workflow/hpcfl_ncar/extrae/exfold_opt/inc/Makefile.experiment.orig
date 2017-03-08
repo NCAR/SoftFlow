@@ -1,22 +1,17 @@
 # Makefile for KGEN-generated kernel
 
 FC := 
-#FC_0 := /ncar/opt/intel/psxe-2015_update3/composer_xe_2015.3.187/bin/intel64/ifort
-FC_0 := /usr/local/intel/2017/compilers_and_libraries_2017.0.098/linux/bin/intel64/ifort
+FC_0 := /ncar/opt/intel/psxe-2015_update3/composer_xe_2015.3.187/bin/intel64/ifort
 FC_FLAGS := 
-FC_FLAGS_SET_0 := -g -ftz -convert big_endian -fp-model source -no-opt-dynamic-align -assume realloc_lhs -xHost -O2
-#FC_FLAGS_SET_0 := -g -ftz -convert big_endian -fp-model fast -no-opt-dynamic-align -assume realloc_lhs -xHost -O3 -xAVX
-
-EXTRAE_DIR := /ncar/asap/opt/extrae/3.3.0/snb/intel/17.0.0
-FC_LINK_FLAGS := -L${EXTRAE_DIR}/lib -Wl,-rpath=${EXTRAE_DIR}/lib -lseqtrace -L/ncar/asap/opt/papi/5.4.1/snb/intel/15.0.0/lib -Wl,-rpath=/ncar/asap/opt/papi/5.4.1/snb/intel/15.0.0/lib -lpapi -L/ncar/asap/opt/libxml2/2.9.2/snb/intel/15.0.0/lib -Wl,-rpath=/ncar/asap/opt/libxml2/2.9.2/snb/intel/15.0.0/lib -lxml2 -L/ncar/asap/opt/libunwind/1.1/snb/intel/15.0.0/lib -Wl,-rpath=/ncar/asap/opt/libunwind/1.1/snb/intel/15.0.0/lib -lunwind
+FC_FLAGS_SET_0 := -ftz -convert big_endian -fp-model source -no-opt-dynamic-align -assume realloc_lhs -xHost -O2
 
 ALL_OBJS := radiation.o mo_rrtmgp_lw.o mo_gas_optics_specification.o mo_rrtmgp_kind.o mo_gas_optics_kernels.o mo_util_reorder.o mo_util_string.o mo_gas_concentrations.o mo_optical_props.o mo_optical_props_kernels.o mo_rrtmgp_constants.o mo_fluxes.o mo_aerosol_optics.o mo_cloud_optics.o mo_rng.o mo_rrtmgp_lw_solver.o mo_rrtmgp_solver_kernels.o shr_kind_mod.o mo_fluxes_byband.o kernel_driver.o kgen_utils.o tprof_mod.o
 
 run: build
-	export LD_LIBRARY_PATH=${EXTRAE_DIR}/lib}:${LD_LIBRARY_PATH}; ./kernel.exe
+	./kernel.exe
 
 build: ${ALL_OBJS}
-	${FC_0} ${FC_FLAGS_SET_0} ${FC_LINK_FLAGS}  -o kernel.exe $^
+	${FC_0} ${FC_FLAGS_SET_0}   -o kernel.exe $^
 
 radiation.o: radiation.F90 mo_rrtmgp_lw.o mo_gas_optics_specification.o mo_rrtmgp_kind.o mo_gas_optics_kernels.o mo_util_reorder.o mo_util_string.o mo_gas_concentrations.o mo_optical_props.o mo_optical_props_kernels.o mo_rrtmgp_constants.o mo_fluxes.o mo_aerosol_optics.o mo_cloud_optics.o mo_rng.o mo_rrtmgp_lw_solver.o mo_rrtmgp_solver_kernels.o shr_kind_mod.o mo_fluxes_byband.o kgen_utils.o tprof_mod.o
 	${FC_0} ${FC_FLAGS_SET_0} -c -o $@ $<
@@ -85,4 +80,4 @@ tprof_mod.o: tprof_mod.f90
 	${FC_0} ${FC_FLAGS_SET_0} -c -o $@ $<
 
 clean:
-	rm -rf experiment* *.mod ${ALL_OBJS} set-0 TRACE.*
+	rm -f kernel.exe *.mod ${ALL_OBJS}
