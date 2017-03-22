@@ -60,6 +60,7 @@ ifeq (${TEST},RRTMGP)
 	cp -f ${INCDIR}/radiation.F90 ${WORKDIR}/${ACTION}_${WAVE}_${TEST}/src/components/cam/src/physics/rrtmgp
 	cp -f ${INCDIR}/mo_rrtmgp_sw.F90 ${WORKDIR}/${ACTION}_${WAVE}_${TEST}/src/components/cam/src/physics/rrtmgp/ext
 	cp -f ${INCDIR}/mo_rrtmgp_lw.F90 ${WORKDIR}/${ACTION}_${WAVE}_${TEST}/src/components/cam/src/physics/rrtmgp/ext
+	cp -f ${INCDIR}/mo_gas_concentrations.F90 ${WORKDIR}/${ACTION}_${WAVE}_${TEST}/src/components/cam/src/physics/rrtmgp/ext
 endif
 endif
 

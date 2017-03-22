@@ -1,0 +1,71 @@
+#!jinja2
+
+#{% set ACTIONS = [ 'extract', 'coverage' ] %}
+{% set ACTIONS = [ 'coverage' ] %}
+{% set SRCPATH = 'src/components/cam/src/physics/' %}
+{% set INVOKES = {
+	'RRTMG': {
+		'SW': '0:0:1,10:0:179,3:0:119,0:0:0,14:0:55,1:0:1',
+		'LW': '11:0:55,9:0:55,0:0:0,0:0:1,1:0:1'
+	},
+	'RRTMGP': {
+		'SW': '7:0:182,0:0:0,0:0:1,1:0:1',
+		'LW': '7:0:181,0:0:0,0:0:1' 
+		}
+	}
+%}
+{% set CALLSITES = { 
+	'RRTMG': { 
+		'SW': SRCPATH +'rrtmg/radsw.F90:radsw:rad_rrtmg_sw:rrtmg_sw', 
+		'LW': SRCPATH +'rrtmg/radlw.F90:radlw:rad_rrtmg_lw:rrtmg_lw' 
+		},
+	'RRTMGP': { 
+		'SW': SRCPATH + 'rrtmgp/radiation.F90:radiation:radiation_tend:rrtmgp_sw', 
+		'LW': SRCPATH + 'rrtmgp/radiation.F90:radiation:radiation_tend:rrtmgp_lw' 
+		} 
+	} 
+%}
+
+title = "Task for generating longwave and shortwave kernels using KGen"
+
+[cylc]
+
+[scheduling]
+    [[dependencies]]
+        graph = """
+		{% for ACTION in ACTIONS %}
+			preprocess => copy_{{ACTION}} => createcase_{{ACTION}} => configcase_{{ACTION}} => run_{{ACTION}}
+		{% endfor %}
+		"""
+#export TASKROOTDIR=`python -c "import os; print os.path.commonprefix(['$CYLC_TASK_LOG_ROOT', '$CYLC_TASK_WORK_DIR'])"`
+
+[runtime]
+    [[preprocess]]
+        script = """
+        """
+		{% for ACTION in ACTIONS %}
+
+    [[copy_{{ACTION}}]]
+        script = """
+            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make copy ACTION={{ACTION}}
+        """
+
+    [[createcase_{{ACTION}}]]
+        script = """
+            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make createcase ACTION={{ACTION}}
+        """
+
+    [[configcase_{{ACTION}}]]
+        script = """
+            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make configcase ACTION={{ACTION}}
+        """
+
+    [[run_{{ACTION}}]]
+        script = """
+			make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make run ACTION={{ACTION}}
+        """
+
+		{% endfor %}
+
+[visualization]
+

@@ -1,0 +1,13 @@
+#!/bin/bash -l
+
+#BSUB -P STDD0002          # project code
+#BSUB -W 00:30             # wall-clock time (hrs:mins)
+#BSUB -n 1                 # number of tasks in job         
+#BSUB -R "span[ptile=16]"  # run 16 MPI tasks per node
+#BSUB -J homme             # job name
+#BSUB -o homme.%J.out      # output file name in which %J is replaced by the job ID
+#BSUB -e homme.%J.err      # error file name in which %J is replaced by the job ID
+#BSUB -q caldera           # queue
+
+## Run the desired program
+EXECUTABLE

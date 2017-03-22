@@ -1,0 +1,35 @@
+#!jinja2
+
+title = "Task for extracting a kernel from Homme"
+
+[cylc]
+
+[scheduling]
+	[[dependencies]]
+		graph = """
+			preprocess => copy => config => run
+		"""
+
+[runtime]
+    [[preprocess]]
+        script = """
+			export TASKROOTDIR=`python -c "import os; print os.path.commonprefix([$CYLC_TASK_LOG_ROOT, $CYLC_TASK_WORK_DIR])"`
+            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make preprocess TASKROOTDIR=$TASKROOTDIR
+        """
+
+    [[copy]]
+        script = """
+            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make copy
+        """
+
+    [[config]]
+        script = """
+            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make config
+        """
+
+	[[run]]
+		script = """
+			make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make run
+		"""
+
+[visualization]
