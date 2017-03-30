@@ -1,267 +1,107 @@
 from BaseHTTPServer import BaseHTTPRequestHandler
 import os
-import sys
 import urlparse
 import urllib
+import traceback
 import logging
 import uuid
 import json
+import ConfigParser
+
+webserverdb = {}
 
 curdir = os.path.dirname(os.path.realpath(__file__))
 sep = '/'
 TAB = 4
 
-
-curdir = os.path.dirname(os.path.realpath(__file__))
-sep = '/'
-TAB = 4
-
-index_page = """<!DOCTYPE html>
+html_frame = """<!DOCTYPE html>
 <html>
     <head>
-        <title>TITLE</title>
+        <title>KGen Coverage Viewer</title>
+        <style>
+            #code {
+                text-align: left;
+            }
+        </style>
     </head>
     <body>
-        <div id="main">
-            <div id='content'>
-                <h1 >Learn From Controlled Experiments</h1>
-                <h3><p><em>Within this tool</em>, complex software performance data can be easily explored and analyzed.</h3>
-                <hr width="50%%">
-                <br><br>%(msg)s<br>
-                <h3>Load new experiment data</h3>
-                <form id="welcome-form" method="GET" action="/data">
-                        <input type="hidden" name="sid" value='%(sid)s'>
-                        <input id="input_load" type="text" name="datapath" value='result.json'>
-                        <input id="submit_load" type="submit" value='Submit'>
-                </form>
-            </div>
-        </div>
+    %(body)s
     </body>
 </html>"""
 
-data_page = """<!DOCTYPE html>
-<html>
-<head>
-
-    <title>Simple Layout Demo</title>
-
-    <meta http-equiv="Content-Type" content="text/html" charset="UTF-8" />
-    <link type="text/css" rel="stylesheet" href="css/layout-default-latest.css" />
-    <link type="text/css" rel="stylesheet" href="css/jquery.bonsai.css" />
-
-    <script type="text/javascript" src="js/jquery-2.2.4.js"></script>
-    <script type="text/javascript" src="js/jquery-ui.js"></script>
-    <script type="text/javascript" src="js/jquery.layout-latest.js"></script>
-    <script src='js/jquery.bonsai.js'></script>
-<!--    <script src='js/jquery.json-list.js'></script> -->
-    <script src='js/jquery.qubit.js'></script>
-    <script type="text/javascript">
-    // set EVERY 'state' here so will undo ALL layout changes
-    // used by the 'Reset State' button: myLayout.loadState( stateResetSettings )
-    var stateResetSettings = {
-        north__size:        "auto"
-    ,   north__initClosed:  false
-    ,   north__initHidden:  false
-    ,   south__size:        "auto"
-    ,   south__initClosed:  false
-    ,   south__initHidden:  false
-    ,   west__size:         200
-    ,   west__initClosed:   false
-    ,   west__initHidden:   false
-    ,   east__size:         300
-    ,   east__initClosed:   false
-    ,   east__initHidden:   false
-    };
-
-    var myLayout;
-
-    $(document).ready(function () {
-
-        // this layout could be created with NO OPTIONS - but showing some here just as a sample...
-        // myLayout = $('body').layout(); -- syntax with No Options
-
-        myLayout = $('body').layout({
-
-        //  reference only - these options are NOT required because 'true' is the default
-            closable:                   true    // pane can open & close
-        ,   resizable:                  true    // when open, pane can be resized
-        ,   slidable:                   true    // when closed, pane can 'slide' open over other panes - closes on mouse-out
-        ,   livePaneResizing:           true
-
-        //  some resizing/toggling settings
-        ,   north__slidable:            false   // OVERRIDE the pane-default of 'slidable=true'
-        ,   north__togglerLength_closed: '100%%' // toggle-button is full-width of resizer-bar
-        ,   north__spacing_closed:      20      // big resizer-bar when open (zero height)
-        ,   south__resizable:           true   // OVERRIDE the pane-default of 'resizable=true'
-        ,   south__spacing_open:        5       // no resizer-bar when open (zero height)
-        ,   south__spacing_closed:      20      // big resizer-bar when open (zero height)
-
-        //  some pane-size settings
-        ,   west__minSize:              100
-        ,   east__size:                 300
-        ,   east__minSize:              200
-        ,   east__maxSize:              .5 // 50%% of layout width
-        ,   center__minWidth:           100
-
-        //  some pane animation settings
-        ,   west__animatePaneSizing:    false
-        ,   west__fxSpeed_size:         "fast"  // 'fast' animation when resizing west-pane
-        ,   west__fxSpeed_open:         1000    // 1-second animation when opening west-pane
-        ,   west__fxSettings_open:      { easing: "easeOutBounce" } // 'bounce' effect when opening
-        ,   west__fxName_close:         "none"  // NO animation when closing west-pane
-
-        //  enable showOverflow on west-pane so CSS popups will overlap north pane
-        ,   west__showOverflowOnHover:  false
-
-        //  enable state management
-        ,   stateManagement__enabled:   true // automatic cookie load & save enabled by default
-
-        ,   showDebugMessages:          true // log and/or display messages from debugging & testing code
-        });
-    });
-
-    jQuery(function() {
-        $('.datatree').bonsai({
-            expandAll: false,
-            checkboxes: true, // depends on jquery.qubit plugin
-            handleDuplicateCheckboxes: true // optional
-        });
-    });
-
-    </script>
-
-
-</head>
-<body>
-
-<div class="ui-layout-north">
-    <center><h1 >Data Explorer</h1></center>
+loaddata = """
+<div id="main">
+    <div id='content'>
+        <center>
+        <h1 >KGen Coverage File Viewer</h1>
+        <h3><p><em>KGen Covereage Viewer</em> can show hot spots within source code.</h3>
+        <hr width="50%%">
+        <h3>Load KGen Coverage File</h3>
+        <form id="data-form" method="GET" action="/data">
+                <input id="input_load" type="text" name="datapath" value='/glade/u/home/youngsun/trepo/temp/kgen_workspace/tests_functional_coverage_test_basic/coverage.ini'>
+                <input id="submit_load" type="submit" value='Submit'>
+        </form>
+        </center>
+    </div>
 </div>
-
-<div class="ui-layout-west">
-    %(westtree)s
-</div>
-
-<div class="ui-layout-south">
-    SOUTH
-</div>
-
-<div class="ui-layout-east">
-    %(easttree)s
-</div>
-
-<div class="ui-layout-center">
-    CENTER
-</div>
-
-</body>
-</html>
 """
 
-c_msg = '<p style="padding: 10px; color: red; border: black 2px solid">%s</p>'
+def page_index():
+    return html_frame%{ 'body': loaddata }
 
-def _indent(lines, width=TAB):
-    return ' '*width + lines.replace('\n', '\n'+' '*width)
+def page_data(data):
+    return html_frame%{ 'body': data }
 
-class CVPages(object):
-    def __init__(self):
-        self.sid = str(uuid.uuid1())
-        self.lastpage = None
-        self.jsondata = None
+def page_view(fileid):
 
-    def genindex(self, msg='' ):
-        return index_page%{'msg': msg, 'sid': self.sid}
+    state = { 0: 'codeline', 1: 'visited', 2: 'notvisited' }
+    curstate = 0
 
-    def gendata(self, data ):
-        def checkjson(indata):
-            if not isinstance(indata, dict): raise Exception("Not a dictionary")
-            if len(indata) == 0: raise Exception("Blank data")
+    blocks = webserverdb['blocks']
+    visits = webserverdb['visits']
+    linevisits = webserverdb['linevisits']
+    filevisits = webserverdb['filevisits']
+    visits_min = webserverdb['visits_min']
+    visits_max = webserverdb['visits_max']
+    visits_range = visits_max - visits_min
+    path = webserverdb['files'][fileid]['path']
+    lines = []
+    with open(path) as f:
+        lines.append('<table style="width:100%">')
+        for idx, line in enumerate(f.read().split('\n')):
 
-            for jid, content in indata.items():
-                if not isinstance(content, dict): raise Exception("%s is not a dictionary"%str(jid))
-                if len(content) == 0: raise Exception("%s has no data"%str(jid))
-                if not content.has_key('cgroup'): raise Exception("%s has no cgroup"%str(jid))
-                if not content.has_key('egroup'): raise Exception("%s has no egroup"%str(jid))
-                if len(content['cgroup']) == 0: raise Exception("%s cgroup has no data"%str(jid))
-                if len(content['egroup']) == 0: raise Exception("%s egroup has no data"%str(jid))
+            encodedline = line.replace(' ', '&nbsp;')
 
-        def gentree(indata, itemid=0, depth=0):
-            outstr = ''
-            if isinstance(indata, dict):
-                if depth == 0:
-                    outstr += '<ol class="datatree">\n'
+            # state update
+            if fileid in blocks and str(idx+1) in blocks[fileid]:
+                row = '<tr><th id="code" style="background-color:white;">%s</th></tr>'%encodedline
+                if blocks[fileid][str(idx+1)]:
+                    curstate = 1
                 else:
-                    outstr += ' '*depth + '\n<ol>\n'
-                for key, value in indata.items():
-                    substr, itemid = gentree(value, itemid, depth+TAB)
-                    #outstr += '<li><input type="checkbox" value="%d" checked />%s:\n%s %s</li>'%
-                    outstr += '<li><input type="checkbox" value="%d" />%s:\n%s %s</li>'%\
-                        (itemid, key, ' '*depth, substr)
-                    itemid += 1
-                outstr += ' '*depth + '</ol>\n'
-            elif isinstance(indata, (list, tuple)):
-                if any(isinstance(subdata, (dict, list, tuple)) for subdata in indata):
-                    outstr += ' '*depth + '<ol>\n'
-                    if isinstance(indata, (dict, list, tuple)):
-                        for subdata in indata:
-                            substr, itemid = gentree(value, itemid, depth+TAB)
-                            outstr += substr
-                            itemid += 1
-                    else:
-                        outstr += '%s\n'%str(indata)
-                    outstr += ' '*depth + '</ol>\n'
-                else:
-                    outstr += '%s\n'%str(indata)
+                    curstate = 2
             else:
-                outstr += '%s\n'%str(indata)
-            return outstr, itemid
-        try:
-            checkjson(data)
-            west = {}
-            east = {}
-            common = {}
-            attr = {}
-            for jid, content in data.items():
-                attr[jid] = content.get('__attr__', {})
-                common[jid] = content.get('common', {})
-                west[jid] = content.get('cgroup', {})
-                east[jid] = content.get('egroup', {})
-            # merge common to west and east
-            westtree, numitems = gentree(west)
-            easttree, numitems = gentree(east)
-        except Exception as e:
-            tree = 'JOSN file check error: %s'%str(e)
-        return _indent(data_page%{'sid': self.sid, 'westtree': westtree, 'easttree': easttree})
+                if curstate == 0:
+                    row = '<tr><th id="code" style="background-color:white;">%s</th></tr>'%encodedline
+                elif curstate in (1, 2):
+                    lline = line.strip().lower()
+                    if any( lline.startswith(key) for key in ('if', 'else', 'end') ):
+                        row = '<tr><th id="code" style="background-color:white;">%s</th></tr>'%encodedline
+                        curstate = 0
+                    elif curstate == 1:
+                        color = int( (linevisits[fileid][str(idx)] - visits_min) * 1.0 / visits_range * 155.0 + 100.0 )
+                        tooltip = str(linevisits[fileid][str(idx)])
+                        #tooltip = '%s, mpi: %s, openmp: %s'%(str(linevisits[fileid][str(idx)]), str(visits[fileid][str(idx)]['mpivisits']), \
+                        #    str(visits[fileid][str(idx)]['ompvisits']))
+                        #tooltip = '%s, mpi: %s, openmp: %s'%(str(linevisits[fileid][str(idx)]), str(visits[fileid][str(idx)]['mpivisits']), \
+                        #    str(visits[fileid][str(idx)]['ompvisits']))
+                        row = '<tr><th id="code" title="%s" style="background-color:rgb(%d,0,0);">%s</th></tr>'%(tooltip, color, encodedline)
+                    elif curstate == 2:
+                        row = '<tr><th id="code" title="No visit" style="background-color:grey;">%s</th></tr>'%encodedline
 
-    def genpage(self, path, params):
-
-        page = 'CONTENT'
-
-        if path == '/':
-            msg = ''
-            sidmsg = params.get('sid', '')
-            if sidmsg == 'notexist':
-                msg = c_msg%"Session does not exist. Please reload experiment data."
-            elif sidmsg == 'notfound':
-                msg = c_msg%"Session could not be found. Please reload experiment data."
-            page = self.genindex(msg=msg)
-        elif path == '/data':
-            # data file
-            try:
-                datapath = urllib.unquote(params['datapath']).decode('utf8')
-                logging.warning(datapath)
-                data = {}
-                with open(datapath) as jfile:
-                    data = json.load(jfile)
-                page = self.gendata(data)
-            except Exception as e:
-                msg = c_msg%'"%s<br>%s" could not be found. Please check file path.'%(str(e), datapath)
-                page = self.genindex(msg=msg)
-            # generate summary page
-        else:
-            logging.warning("%s is not supported yet."%path)
-
-        return page
+            lines.append(row)
+        lines.append('</table>')
+    #return '<br>\n'.join(lines).replace(' ', '&nbsp;')
+    return html_frame%{ 'body': '\n'.join(lines) }
 
 class CVWebServer(BaseHTTPRequestHandler):
 
@@ -301,39 +141,127 @@ class CVWebServer(BaseHTTPRequestHandler):
                 sendReply = True
 
             if sendReply == True:
-                f = open(curdir + sep + self.path)
-                self._set_headers(mimetype)
-                self.wfile.write(f.read())
-                f.close()
+                with open(curdir + sep + self.path) as f:
+                    self._set_headers(mimetype)
+                    self.wfile.write(f.read())
             else:
 
-                #logging.warning('%s %s %s'%(query, path, str(params)))
-
                 self._set_headers()
+                if path == '/':
+                    self.wfile.write(page_index())
+                elif path == '/data':
+                    datapath = urllib.unquote(params['datapath']).decode('utf8')
+                    config = ConfigParser.RawConfigParser()
+                    config.read(datapath)
+                    webserverdb['coverage_ini'] = config
+                    outlines = []
 
-                newsession = False
+                    # title
+                    outlines.append('<h1>Coverage Data</h1>')
 
-                if 'sid' in params:
-                    if params['sid'] in self.server.session:
-                        self.wfile.write(self.server.session[params['sid']].genpage(path, params))
-                    else:
-                        path = '/'
-                        params['sid'] = 'notfound'
-                        newsession = True
+                    # summary
+                    outlines.append('<h2>SUMMARY</h2>')
+                    for opt in config.options('summary'):
+                        outlines.append('%s = %s'%(opt, config.get('summary', opt)))
+
+                    # file
+                    files = {}
+                    usedfiles = tuple( fid.strip() for fid in config.get('file', 'used_files').split(','))
+                    for fid in usedfiles:
+                        if fid not in files:
+                            files[fid] = {}
+                            files[fid]['used'] = True
+
+                    outlines.append('<h2>FILE</h2>')
+                    for opt in config.options('file'):
+                        if opt.isdigit():
+                            path = config.get('file', opt)
+                            if opt in files:
+                                files[opt]['path'] = path
+                                outlines.append('<a href="/view?fileid=%s">%s</a>'%(opt, os.path.basename(path)))
+                            else:
+                                files[opt] = {}
+                                files[opt]['path'] = path
+                                files[opt]['used'] = False
+                                outlines.append(os.path.basename(path))
+                    webserverdb['files'] = files
+
+                    # block
+                    blocks = {}
+                    usedpairs = tuple( pair.strip().split(':') for pair in config.get('block', 'used_blocks').split(','))
+                    for fid, lnum in usedpairs:
+                        if fid not in blocks:
+                            blocks[fid] = {}
+                        if lnum not in blocks[fid]:
+                            blocks[fid][lnum] = True
+                    for opt in config.options('block'):
+                        if opt.isdigit():
+                            if opt not in blocks:
+                                blocks[opt] = {}
+                            lnums = tuple( lnum.strip() for lnum in config.get('block', opt).split(',') )
+                            for lnum in lnums:
+                                if lnum not in blocks[opt]:
+                                    blocks[opt][lnum] = False
+                    webserverdb['blocks'] = blocks
+
+                    # visits
+                    visits = {} # fileid, linenum, { 'totalvisits': N, 'mpivisits': { mpi: N }, 'ompvisits': { omp: N } }
+                    linevisits = {}
+                    filevisits = {}
+                    for opt in config.options('invoke'):
+                        mpi, omp, invoke = opt.split()
+                        for visits_triple in config.get('invoke', opt).split(','):
+                            fid, lnum, nvisits = visits_triple.strip().split(':')
+
+                            if fid not in visits:
+                                visits[fid] = {}
+                                linevisits[fid] = {}
+                            if lnum not in visits[fid]:
+                                visits[fid][lnum] = {}
+                                linevisits[fid][lnum] = 0
+
+                            if 'mpivisits' not in visits[fid][lnum]:
+                                visits[fid][lnum]['mpivisits'] = {}
+                            if mpi not in visits[fid][lnum]['mpivisits']:
+                                visits[fid][lnum]['mpivisits'][mpi] = int(nvisits)
+                            else:
+                                visits[fid][lnum]['mpivisits'][mpi] += int(nvisits)
+
+                            if 'ompvisits' not in visits[fid][lnum]:
+                                visits[fid][lnum]['ompvisits'] = {}
+                            if omp not in visits[fid][lnum]['ompvisits']:
+                                visits[fid][lnum]['ompvisits'][omp] = int(nvisits)
+                            else:
+                                visits[fid][lnum]['ompvisits'][omp] += int(nvisits)
+
+                    visits_min = 100000000000000000000000
+                    visits_max = 0
+                    for fileid, linenums in visits.items():
+                        for lnum, visits in linenums.items():
+                            for visit in visits['mpivisits'].values():
+                                linevisits[fileid][lnum] += visit
+                            visits_min = min(visits_min, linevisits[fileid][lnum])
+                            visits_max = max(visits_max, linevisits[fileid][lnum])
+                        filevisits[fileid] = sum(linevisits[fileid].values())
+
+                    webserverdb['visits'] = visits
+                    webserverdb['linevisits'] = linevisits
+                    webserverdb['filevisits'] = filevisits
+                    webserverdb['visits_min'] = visits_min
+                    webserverdb['visits_max'] = visits_max
+
+                    self.wfile.write(page_data('<br>\n'.join(outlines)))
+
+                elif path == '/view':
+                    self.wfile.write(page_view(params['fileid']))
+ 
                 else:
-                    newsession = True
-                    if path != '/':
-                        path = '/'
-                        params['sid'] = 'notexist'
-
-                if newsession:
-                    gen = CVPages()
-                    self.server.session[gen.sid] = gen
-                    self.wfile.write(gen.genpage(path, params))
-
+                    self.send_error(404,'File Not Found: %s' % self.path)
         except IOError:
             self.send_error(404,'File Not Found: %s' % self.path)
 
+        except Exception as e:
+            self.send_error(520, traceback.format_exc().replace('\n', '<br>\n').replace(' ', '&nbsp;'))
 
     def do_HEAD(self):
         self._set_headers()
