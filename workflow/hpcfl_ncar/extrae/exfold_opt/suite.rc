@@ -1,8 +1,7 @@
 #!jinja2
 
-{% set CPUS = [ 'SNB' ] %}
-{% set PRERUN= { 'SNB': 'set +u; source ~/intel.compiler; set -u; ulimit -s unlimited' } %}
-{% set groups = [ 'experiment' ] %}
+{% set PRERUN= 'set +u; source ~/intel.compiler; set -u; ulimit -s unlimited' %}
+{% set groups = [ 'control', 'experiment' ] %}
 
 title = "Task for generating Extrae Folding plots"
 
@@ -11,9 +10,8 @@ title = "Task for generating Extrae Folding plots"
 [scheduling]
 	[[dependencies]]
 		graph = """
-{% for CPU in CPUS %}
-			preprocess => copy_experiment_{{CPU}} => clean_experiment_{{CPU}} => build_experiment_{{CPU}} => run_experiment_{{CPU}}
-			run_experiment_{{CPU}} => collect_experiment_{{CPU}} => fold_experiment_{{CPU}} => plot_{{CPU}}
+{% for group in groups %}
+			preprocess => copy_{{group}} => fold_{{group}} => plot
 
 {% endfor %}
 		"""
@@ -24,46 +22,23 @@ title = "Task for generating Extrae Folding plots"
 			export TASKROOTDIR=`python -c "import os; print os.path.commonprefix([$CYLC_TASK_LOG_ROOT, $CYLC_TASK_WORK_DIR])"`
             make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make preprocess TASKROOTDIR=$TASKROOTDIR
         """
-{% for CPU in CPUS %}
     {% for group in groups  %}
 
-    [[copy_{{group}}_{{CPU}}]]
+    [[copy_{{group}}]]
         script = """
-            {{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make copy_{{group}} CPU={{CPU}}
+            {{PRERUN}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make copy_{{group}}
         """
 
-	[[clean_{{group}}_{{CPU}}]]
+	[[fold_{{group}}]]
 		script = """
-			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make clean_{{group}} CPU={{CPU}}
-		"""
-
-	[[build_{{group}}_{{CPU}}]]
-		script = """
-			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make build_{{group}} CPU={{CPU}}
-		"""
-
-	[[run_{{group}}_{{CPU}}]]
-		script = """
-			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make run_{{group}} CPU={{CPU}}
-		"""
-
-	[[collect_{{group}}_{{CPU}}]]
-		script = """
-			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make collect_{{group}} CPU={{CPU}}
-		"""
-
-	[[fold_{{group}}_{{CPU}}]]
-		script = """
-			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make fold_{{group}} CPU={{CPU}}
+			{{PRERUN}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make fold_{{group}}
 		"""
 
     {% endfor %}
 
-	[[plot_{{CPU}}]]
+	[[plot]]
 		script = """
-			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make plot CPU={{CPU}}
+			{{PRERUN}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make plot
 		"""
-
-{% endfor %}
 
 [visualization]

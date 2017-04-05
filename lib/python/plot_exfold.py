@@ -58,7 +58,6 @@ def parse_args():
     folddirs = []
     cfg['folddirs'] = folddirs
 
-     # app name
     flags = OrderedDict()
     cfg['flags'] = flags
 
@@ -83,7 +82,7 @@ def parse_args():
     for folddirpair in args.folddirs:
         fsplit = folddirpair.split(':')
         if len(fsplit) == 2:
-            cfg['appnames'][fsplit[0]] = fsplit[1]
+            cfg['appnames'][os.path.abspath(fsplit[0])] = fsplit[1]
             folddir = fsplit[0]
         elif len(fsplit) == 1:
             folddir = fsplit[0]
@@ -226,6 +225,10 @@ def gen_summarypage():
     ax.text(0.05, yloc, '[ Hardware counters ]', fontsize=SUBTITLE_SIZE, horizontalalignment='left')
 
     counters = [ cnt for cnt in cfg['csvdata'].keys() if not cnt.endswith('per_ins')]
+    for cnt in cfg['csvdata'].keys():
+        if cnt.endswith('_per_ins') and cnt[:-8] not in counters:
+            counters.append(cnt[:-8])
+
     listcnts = []
     for counter in counters:
         listcnts.append(counter)
