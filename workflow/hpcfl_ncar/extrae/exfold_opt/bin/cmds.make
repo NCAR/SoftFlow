@@ -4,7 +4,6 @@
 # Variables
 ##############
 
-SUITENAME := exfold_opt
 CPU ?= SNB
 
 # fdv
@@ -37,6 +36,8 @@ INCDIR := ${SUITEDIR}/inc
 PYTHONPATH := ${SUITEDIR}/lib/python:${SOFTFLOWDIR}/lib/python:${PYTHONPATH}
 EGROUPDIR := ${WORKDIR}
 
+SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
+
 ORG_FOLDING := /lustre/scratch/youngsun/cylcworkspace/exfold_SNB/egroup/folding/0302_2017:original
 OPT_FOLDING := ${WORKDIR}/kernel/experiment:optimized
 
@@ -50,6 +51,9 @@ PLOT_SCRIPT ?= ${SOFTFLOWDIR}/lib/python/plot_exfold.py
 
 cylc_register:
 	cylc register ${SUITENAME} ${SUITEDIR}
+
+cylc_unregister:
+	cylc unregister ${SUITENAME}
 
 cylc_validate:
 	cylc validate ${SUITENAME}

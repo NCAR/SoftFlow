@@ -7,40 +7,43 @@
 
 CPU ?= KNL
 SFROOTDIR ?= ${HOME}/repos/github/SoftFlow
-CYLC_SUITE_REG_NAME ?= chemck
 CYLC_SUITE_DEF_PATH ?= ${SFROOTDIR}/workflow/hpcfl_ncar/dspo/chemck
 
-WORKDIR := /lustre/scratch/youngsun/cylcworkspace/${CYLC_SUITE_REG_NAME}_${CPU}
+WORKDIR := /lustre/scratch/youngsun/cylcworkspace/${SUITENAME}_${CPU}
 CGROUPDIR := ${WORKDIR}/cgroup
 EGROUPDIR := ${WORKDIR}/egroup
 BINDIR := ${CYLC_SUITE_DEF_PATH}/bin
 INCDIR := ${CYLC_SUITE_DEF_PATH}/inc
 
+SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
 
 ###############
 # Cylc commands
 ###############
 
-register:
-	cylc register ${CYLC_SUITE_REG_NAME} ${CYLC_SUITE_DEF_PATH}
+cylc_register:
+	cylc register ${SUITENAME} ${CYLC_SUITE_DEF_PATH}
 
-validate:
-	cylc validate ${CYLC_SUITE_REG_NAME}
+cylc_unregister:
+	cylc unregister ${SUITENAME}
 
-stop:
-	cylc stop ${CYLC_SUITE_REG_NAME}
+cylc_validate:
+	cylc validate ${SUITENAME}
 
-ready:
-	cylc reset -s ready ${CYLC_SUITE_REG_NAME} ${TASKID}
+cylc_stop:
+	cylc stop ${SUITENAME}
 
-run:
-	cylc run ${CYLC_SUITE_REG_NAME}
+cylc_ready:
+	cylc reset -s ready ${SUITENAME} ${TASKID}
 
-monitor:
-	cylc monitor ${CYLC_SUITE_REG_NAME}
+cylc_run:
+	cylc run ${SUITENAME}
 
-rmport:
-	rm -f ${HOME}/.cylc/ports/${CYLC_SUITE_REG_NAME}
+cylc_monitor:
+	cylc monitor ${SUITENAME}
+
+cylc_rmport:
+	rm -f ${HOME}/.cylc/ports/${SUITENAME}
 
 ###############
 # Task commands
@@ -93,7 +96,7 @@ endif
 
 checkdiff:
 	python ${BINDIR}/statdiff.py ${BASELINE} ${FOLLOWUP} ${CPU} \
-		$(shell python ${SFROOTDIR}/lib/python/packresult.py outfile) ${CYLC_SUITE_REG_NAME}
+		$(shell python ${SFROOTDIR}/lib/python/packresult.py outfile) ${SUITENAME}
 
 genoutput:
 	python ${SFROOTDIR}/lib/python/packresult.py pack

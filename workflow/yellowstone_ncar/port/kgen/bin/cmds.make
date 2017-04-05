@@ -4,8 +4,6 @@
 # Variables
 ##############
 
-SUITENAME := port
-
 PORT := /glade/u/home/youngsun/apps/port/rrtmgp14_cam5_4_48
 KGEN := /glade/u/home/youngsun/repos/github/KGen
 
@@ -13,6 +11,8 @@ WORKDIR := /glade/scratch/youngsun/cylcworkdir/port
 MAKEFILEDIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 SUITEDIR := ${MAKEFILEDIR}/..
 INCDIR := ${SUITEDIR}/inc
+
+SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
 
 #PRERUN_EXTRACT := "cd ${KGEN}; git checkout devel"
 PRERUN_EXTRACT := "true"
@@ -25,6 +25,9 @@ PRERUN_COVERAGE := "true"
 
 cylc_register:
 	cylc register ${SUITENAME} ${SUITEDIR}
+
+cylc_unregister:
+	cylc unregister ${SUITENAME}
 
 cylc_validate:
 	cylc validate ${SUITENAME}

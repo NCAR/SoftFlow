@@ -4,8 +4,6 @@
 # Variables
 ##############
 
-SUITENAME := pop
-
 POP := /glade/u/home/youngsun/apps/cesm/cesm2_0_alpha06b_marbl_dev_n31_cesm_pop_2_1_20170216
 KGEN := /glade/u/home/youngsun/repos/github/KGen
 
@@ -13,6 +11,8 @@ WORKDIR := /glade/scratch/youngsun/cylcworkspace/pop
 MAKEFILEDIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 SUITEDIR := ${MAKEFILEDIR}/..
 INCDIR := ${SUITEDIR}/inc
+
+SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
 
 CALLSITE :=  components/pop/source/passive_tracers.F90:passive_tracers:set_interior_passive_tracers_3D:ecosys_driver_set_interior
 
@@ -22,6 +22,9 @@ CALLSITE :=  components/pop/source/passive_tracers.F90:passive_tracers:set_inter
 
 cylc_register:
 	cylc register ${SUITENAME} ${SUITEDIR}
+
+cylc_unregister:
+	cylc unregister ${SUITENAME}
 
 cylc_validate:
 	cylc validate ${SUITENAME}

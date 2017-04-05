@@ -4,8 +4,6 @@
 # Variables
 ##############
 
-SUITENAME := chemv4
-
 #KERNELREPO := https://github.com/NCAR/kernelOptimization
 #CHEMV4 := all/WACCM_imp_sol_vector/v04
 #CHEMDATA := all/WACCM_imp_sol_vector/data
@@ -19,17 +17,22 @@ CGROUPDIR := ${WORKDIR}/cgroup
 EGROUPDIR := ${WORKDIR}/egroup
 DATADIR := ${WORKDIR}/data
 
+SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
+
 ###########
 # Targets
 ###########
 
-register:
+cylc_register:
 	cylc register ${SUITENAME} ${SUITEDIR}
 
-validate:
+cylc_unregister:
+	cylc unregister ${SUITENAME}
+
+cylc_validate:
 	cylc validate ${SUITENAME}
 
-stop:
+cylc_stop:
 	cylc stop ${SUITENAME}
 
 copyfiles:

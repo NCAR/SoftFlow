@@ -6,10 +6,10 @@
 
 CPU ?= SNB
 
-HOMME_CONTROL := /glade/u/home/youngsun/kernels/port/rrtmg_lw
-HOMME_EXPERIMENT := /glade/u/home/youngsun/kernels/port/rrtmgp_lw.v2
+CONTROL_SRCDIR := /glade/p/tdd/asap/kgen_kernels/port/rrtmgp14_cam5_4_48/rrtmgp_lw.v3
+EXPERIMENT_SRCDIR := /glade/p/tdd/asap/kgen_kernels/port/rrtmgp14_cam5_4_48/rrtmgp_lw.v4
 
-WORKDIR := /glade/scratch/youngsun/cylcworkspace/${SUITENAME}_${CPU}
+WORKDIR := /glade/scratch/youngsun/cylcworkspace/${SUITENAME}
 MAKEFILEDIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 BINDIR := ${MAKEFILEDIR}
 SUITEDIR := ${MAKEFILEDIR}/..
@@ -73,18 +73,20 @@ preprocess:
 copy_control:
 	@echo 'Begin copy_control'
 	mkdir -p ${CGROUPDIR}
-	cp -R -u -p ${HOMME_CONTROL}/* ${CGROUPDIR}
+	cp -R -u -p ${CONTROL_SRCDIR}/* ${CGROUPDIR}
 	cp -f ${INCDIR}/extrae.xml ${CGROUPDIR}/kernel
-	cp -f ${INCDIR}/rrtmg_lw_rad.f90 ${CGROUPDIR}/kernel
-	cp -f ${INCDIR}/Makefile.control ${CGROUPDIR}/kernel/Makefile
+	cp -f ${INCDIR}/mo_rrtmgp_lw.F90.v3 ${CGROUPDIR}/kernel/mo_rrtmgp_lw.F90
+	cp -f ${INCDIR}/radiation.F90.v3 ${CGROUPDIR}/kernel/radiation.F90
+	cp -f ${INCDIR}/Makefile.v3 ${CGROUPDIR}/kernel/Makefile
 
 copy_experiment:
 	@echo 'Begin copy_experiment'
 	mkdir -p ${EGROUPDIR}
-	cp -R -u -p ${HOMME_EXPERIMENT}/* ${EGROUPDIR}
+	cp -R -u -p ${EXPERIMENT_SRCDIR}/* ${EGROUPDIR}
 	cp -f ${INCDIR}/extrae.xml ${EGROUPDIR}/kernel
-	cp -f ${INCDIR}/mo_rrtmgp_lw.F90 ${EGROUPDIR}/kernel
-	cp -f ${INCDIR}/Makefile.experiment ${EGROUPDIR}/kernel/Makefile
+	cp -f ${INCDIR}/mo_rrtmgp_lw.F90.v4 ${EGROUPDIR}/kernel/mo_rrtmgp_lw.F90
+	cp -f ${INCDIR}/radiation.F90.v4 ${EGROUPDIR}/kernel/radiation.F90
+	cp -f ${INCDIR}/Makefile.v4 ${EGROUPDIR}/kernel/Makefile
 
 clean_control:
 	@echo 'Begin clean_control'
@@ -111,37 +113,21 @@ run_control:
 	cd ${CGROUPDIR}/kernel; \
 		sed "s,EXECUTABLE,${CGROUPDIR}/kernel/kernel.exe,g" ${BINDIR}/job.${CPU}.submit > ./job.${CPU}.submit; \
 		bsub -K < ./job.${CPU}.submit
-		#bsub -K < ${BINDIR}/job.${CPU}.submit ${CGROUPDIR}/kernel/kernel.exe
 
 run_experiment:
 	@echo 'Begin run_experiment'
 	cd ${EGROUPDIR}/kernel; \
 		sed "s,EXECUTABLE,${EGROUPDIR}/kernel/kernel.exe,g" ${BINDIR}/job.${CPU}.submit > ./job.${CPU}.submit; \
 		bsub -K < ./job.${CPU}.submit
-		#bsub -K < ${BINDIR}/job.${CPU}.submit ${EGROUPDIR}/kernel/kernel.exe
 
 collect_control:
 	@echo 'Begin collect_control'
 	cd ${CGROUPDIR}/kernel; \
-	${EXTRAE_HOME}/bin/mpi2prv -f TRACE.mpits -o control.prv
+	${EXTRAE_HOME}/bin/mpi2prv -f TRACE.mpits -o control.prv; \
+	tar -cvf control${SUITENAME}.tar control.prv control.pcf control.row
 
 collect_experiment:
 	@echo 'Begin collect_experiment'
 	cd ${EGROUPDIR}/kernel; \
-	${EXTRAE_HOME}/bin/mpi2prv -f TRACE.mpits -o experiment.prv
-
-fold_control:
-	@echo 'Begin fold_control'
-	cd ${CGROUPDIR}/kernel; \
-		${FOLDING_HOME}/bin/folding ./control.prv "User function"
-
-fold_experiment:
-	@echo 'Begin fold_experiment'
-	cd ${EGROUPDIR}/kernel; \
-		${FOLDING_HOME}/bin/folding ./experiment.prv "User function"
-
-plot_control:
-	@echo 'Not implemented yet.'
-
-plot_experiment:
-	@echo 'Not implemented yet.'
+	${EXTRAE_HOME}/bin/mpi2prv -f TRACE.mpits -o experiment.prv; \
+	tar -cvf experiment${SUITENAME}.tar experiment.prv experiment.pcf experiment.row

@@ -4,7 +4,6 @@
 # Variables
 ##############
 
-SUITENAME := chemck
 CPU ?= KNL
 
 TMPDIR ?= /global/cscratch1/sd/grnydawn 
@@ -19,34 +18,39 @@ CGROUPDIR := ${WORKDIR}/cgroup
 EGROUPDIR := ${WORKDIR}/egroup
 DATADIR := ${WORKDIR}/data
 
+SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
+
 ALLOCTIME ?= 08:00:00
 
 ###########
 # Targets
 ###########
 
-register:
+cylc_register:
 	cylc register ${SUITENAME} ${SUITEDIR}
 
-validate:
+cylc_unregister:
+	cylc unregister ${SUITENAME}
+
+cylc_validate:
 	cylc validate ${SUITENAME}
 
-graph:
+cylc_graph:
 	cylc graph ${SUITENAME}
 
-stop:
+cylc_stop:
 	cylc stop ${SUITENAME}
 
-ready:
+cylc_ready:
 	cylc reset -s ready ${SUITENAME} ${TASKID}
 
-run:
+cylc_run:
 	cylc run ${SUITENAME}
 
-monitor:
+cylc_monitor:
 	cylc monitor ${SUITENAME}
 
-rmport:
+cylc_rmport:
 	rm -f ${HOME}/.cylc/ports/${SUITENAME}
 
 salloc:

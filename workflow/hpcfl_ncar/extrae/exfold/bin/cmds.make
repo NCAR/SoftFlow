@@ -4,7 +4,6 @@
 # Variables
 ##############
 
-SUITENAME := exfold
 CPU ?= SNB
 
 HOMME_CONTROL := /users/youngsun/kernels/port/rrtmg_lw
@@ -20,6 +19,8 @@ INCDIR := ${SUITEDIR}/inc
 CGROUPDIR := ${WORKDIR}/cgroup
 EGROUPDIR := ${WORKDIR}/egroup
 
+SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
+
 EXTRAE_HOME ?= /ncar/asap/opt/extrae/3.3.0/snb/intel/17.0.0
 FOLDING_HOME ?= /ncar/asap/opt/folding/1.0.2
 PLOT_SCRIPT ?= ${SOFTFLOWDIR}/lib/python/plot_exfold.py
@@ -30,6 +31,9 @@ PLOT_SCRIPT ?= ${SOFTFLOWDIR}/lib/python/plot_exfold.py
 
 cylc_register:
 	cylc register ${SUITENAME} ${SUITEDIR}
+
+cylc_unregister:
+	cylc unregister ${SUITENAME}
 
 cylc_validate:
 	cylc validate ${SUITENAME}

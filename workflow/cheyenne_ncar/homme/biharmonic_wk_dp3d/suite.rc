@@ -1,0 +1,47 @@
+#!jinja2
+
+title = "Task for extracting a kernel from Homme"
+
+{% set PRERUN = 'module load netcdf; module load pnetcdf' %}
+
+[cylc]
+
+[scheduling]
+	[[dependencies]]
+		graph = """
+			preprocess => copy => config => clean => build => run
+		"""
+
+[runtime]
+    [[preprocess]]
+        script = """
+			export TASKROOTDIR=`python -c "import os; print os.path.commonprefix([$CYLC_TASK_LOG_ROOT, $CYLC_TASK_WORK_DIR])"`
+            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make preprocess TASKROOTDIR=$TASKROOTDIR
+        """
+
+    [[copy]]
+        script = """
+            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make copy
+        """
+
+    [[config]]
+        script = """
+            {{PRERUN}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make config
+        """
+
+	[[clean]]
+		script = """
+			make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make clean
+		"""
+
+	[[build]]
+		script = """
+			{{PRERUN}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make build
+		"""
+
+	[[run]]
+		script = """
+			{{PRERUN}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make run
+		"""
+
+[visualization]
