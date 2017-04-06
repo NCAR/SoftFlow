@@ -1,0 +1,22 @@
+#!/bin/csh -f
+
+#setenv CASE     g.e20a06b.GECO.T62_g16.perf.002
+#setenv CIMEROOT /glade/u/home/klindsay/svn_sandboxes/cesm2_0_alpha06b_marbl_dev_n31_cesm_pop_2_1_20170216/cime
+#setenv CASEROOT /glade/scratch/$USER/$CASE
+
+${PWD}/src/cime/scripts/create_newcase -mach yellowstone -res T62_g16 -compset GECO -case ${PWD}/case -project STDD0002
+
+./xmlchange MAX_TASKS_PER_NODE=16,PES_PER_NODE=16
+./xmlchange NTASKS_ATM=16,NTASKS_WAV=16,NTASKS_GLC=16,NTASKS_ROF=16,NTASKS_LND=16,NTASKS_ESP=16,NTHRDS_ESP=2
+./xmlchange ROOTPE_CPL=16,ROOTPE_ICE=16
+./xmlchange NTASKS_CPL=64,NTASKS_ICE=64
+./xmlchange ROOTPE_OCN=80
+./xmlchange NTASKS_OCN=1536
+
+# change POP_AUTO_DECOMP with sed because xmlchange cannot do it
+sed 's/"POP_AUTO_DECOMP" value=".*"/"POP_AUTO_DECOMP" value="false"/g' env_build.xml > env_build.xml.$$
+mv env_build.xml.$$ env_build.xml
+
+./xmlchange POP_BLCKX=8,POP_BLCKY=4,POP_NX_BLOCKS=64,POP_NY_BLOCKS=32,POP_MXBLCKS=2,POP_DECOMPTYPE=spacecurve
+
+./case.setup

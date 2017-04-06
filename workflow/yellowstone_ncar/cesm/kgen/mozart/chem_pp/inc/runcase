@@ -1,0 +1,29 @@
+#!/bin/csh -f
+
+cat >> user_nl_pop << EOF
+moc_requested = .false.
+n_heat_trans_requested = .false.
+n_salt_trans_requested = .false.
+region_info_file = '/glade/p/work/jet/gx1v7/gx1v7_region_ids'
+region_mask_file = '/glade/p/cesmdata/cseg/inputdata/ocn/pop/gx1v7/grid/region_mask_20151008.ieeei4'
+topography_file = '/glade/p/work/mlevy/codes/ncl_scripts/gx1v7/topography_20161215.ieeei4'    
+n_tavg_streams = 1
+ltavg_ignore_extra_streams = .true.
+! ladjust_bury_coeff = .true.
+! tracer_restore_vars = ''
+EOF
+
+cat >> user_nl_cice << EOF
+grid_file = '/glade/p/cesmdata/cseg/inputdata/ocn/pop/gx1v7/grid/horiz_grid_20010402.ieeer8'
+kmt_file = '/glade/p/work/mlevy/codes/ncl_scripts/gx1v7/topography_20161215.ieeei4'                   
+EOF
+
+cat >> user_nl_cpl << EOF
+profile_detail_limit=4
+EOF
+
+./xmlchange STOP_OPTION=ndays,STOP_N=20,REST_OPTION=never,DOUT_S=FALSE
+./xmlchange --subgroup case.run JOB_QUEUE=premium,JOB_WALLCLOCK_TIME=0:10
+./xmlchange TIMER_LEVEL=12
+
+./case.submit

@@ -9,13 +9,14 @@ CPU ?= KNL
 SFROOTDIR ?= ${HOME}/repos/github/SoftFlow
 CYLC_SUITE_DEF_PATH ?= ${SFROOTDIR}/workflow/hpcfl_ncar/dspo/chemck
 
+SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
 WORKDIR := /lustre/scratch/youngsun/cylcworkspace/${SUITENAME}_${CPU}
+
 CGROUPDIR := ${WORKDIR}/cgroup
 EGROUPDIR := ${WORKDIR}/egroup
 BINDIR := ${CYLC_SUITE_DEF_PATH}/bin
 INCDIR := ${CYLC_SUITE_DEF_PATH}/inc
 
-SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
 
 ###############
 # Cylc commands

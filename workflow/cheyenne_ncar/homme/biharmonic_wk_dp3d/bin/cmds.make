@@ -10,16 +10,16 @@ CPU := BDW
 SCRATCH=/glade/scratch/youngsun
 HOMME := ${HOME}/apps/homme/dungeon20
 
-WORKDIR := ${SCRATCH}/cylcworkspace/${SUITENAME}_${CPU}
 MAKEFILEDIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
+WORKDIR := ${SCRATCH}/cylcworkspace/${SUITENAME}_${CPU}
+
 BINDIR := ${MAKEFILEDIR}
 SUITEDIR := ${MAKEFILEDIR}/..
 SOFTFLOWDIR := ${SUITEDIR}/../../../../lib/python
 INCDIR := ${SUITEDIR}/inc
 PYTHONDIR := ${SUITEDIR}/lib/python:${SOFTFLOWDIR}
 #DATADIR := ${WORKDIR}/data
-
-SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
 
 #################
 # Cylc useful commands

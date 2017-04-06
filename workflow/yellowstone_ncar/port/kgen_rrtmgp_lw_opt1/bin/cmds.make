@@ -9,13 +9,14 @@ CASE := opt1_LW_RRTMGP
 SCRIPT := f19c5aqrpportm
 KGEN := /glade/u/home/youngsun/repos/github/KGen
 
-WORKDIR := /glade/scratch/youngsun/cylcworkdir/port
 MAKEFILEDIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
+WORKDIR := /glade/scratch/youngsun/cylcworkdir/port
+
 SUITEDIR := ${MAKEFILEDIR}/..
 INCDIR := ${SUITEDIR}/inc
 CALLSITE := ${WORKDIR}/${CASE}/src/components/cam/src/physics/rrtmgp/radiation.F90:radiation:radiation_tend:rrtmgp_lw
 
-SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
 
 #################
 # Cylc useful commands

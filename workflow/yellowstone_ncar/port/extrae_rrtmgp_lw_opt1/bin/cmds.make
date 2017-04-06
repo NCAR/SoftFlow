@@ -9,8 +9,10 @@ CPU ?= SNB
 CONTROL_SRCDIR := /glade/p/tdd/asap/kgen_kernels/port/rrtmgp14_cam5_4_48/rrtmgp_lw.v3
 EXPERIMENT_SRCDIR := /glade/p/tdd/asap/kgen_kernels/port/rrtmgp14_cam5_4_48/rrtmgp_lw.v4
 
-WORKDIR := /glade/scratch/youngsun/cylcworkspace/${SUITENAME}
 MAKEFILEDIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
+WORKDIR := /glade/scratch/youngsun/cylcworkspace/${SUITENAME}
+
 BINDIR := ${MAKEFILEDIR}
 SUITEDIR := ${MAKEFILEDIR}/..
 SOFTFLOWDIR := ${SUITEDIR}/../../../../lib/python
@@ -19,8 +21,6 @@ PYTHONDIR := ${SUITEDIR}/lib/python:${SOFTFLOWDIR}
 CGROUPDIR := ${WORKDIR}/cgroup
 EGROUPDIR := ${WORKDIR}/egroup
 #DATADIR := ${WORKDIR}/data
-
-SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
 
 EXTRAE_HOME ?= /glade/p/tdd/asap/contrib/extrae/3.3.0
 FOLDING_HOME ?= /glade/p/tdd/asap/contrib/folding/
@@ -77,7 +77,7 @@ copy_control:
 	cp -f ${INCDIR}/extrae.xml ${CGROUPDIR}/kernel
 	cp -f ${INCDIR}/mo_rrtmgp_lw.F90.v3 ${CGROUPDIR}/kernel/mo_rrtmgp_lw.F90
 	cp -f ${INCDIR}/radiation.F90.v3 ${CGROUPDIR}/kernel/radiation.F90
-	cp -f ${INCDIR}/Makefile.v3 ${CGROUPDIR}/kernel/Makefile
+	cp -f ${INCDIR}/Makefile.v3.fast ${CGROUPDIR}/kernel/Makefile
 
 copy_experiment:
 	@echo 'Begin copy_experiment'
@@ -86,7 +86,7 @@ copy_experiment:
 	cp -f ${INCDIR}/extrae.xml ${EGROUPDIR}/kernel
 	cp -f ${INCDIR}/mo_rrtmgp_lw.F90.v4 ${EGROUPDIR}/kernel/mo_rrtmgp_lw.F90
 	cp -f ${INCDIR}/radiation.F90.v4 ${EGROUPDIR}/kernel/radiation.F90
-	cp -f ${INCDIR}/Makefile.v4 ${EGROUPDIR}/kernel/Makefile
+	cp -f ${INCDIR}/Makefile.v4.fast ${EGROUPDIR}/kernel/Makefile
 
 clean_control:
 	@echo 'Begin clean_control'
@@ -99,14 +99,10 @@ clean_experiment:
 build_control:
 	@echo 'Begin build_control'
 	cd ${CGROUPDIR}/kernel; make -j 4 build
-	#cp -f ${INCDIR}/rrtmg_lw_rad.f90.orig ${CGROUPDIR}/kernel/rrtmg_lw_rad.f90
-	#cp -f ${INCDIR}/Makefile.control.orig ${CGROUPDIR}/kernel/Makefile
 
 build_experiment:
 	@echo 'Begin build_experiment'
 	cd ${EGROUPDIR}/kernel; make -j 4 build
-	#cp -f ${INCDIR}/mo_rrtmgp_lw.F90.orig ${EGROUPDIR}/kernel/mo_rrtmgp_lw.F90
-	#cp -f ${INCDIR}/Makefile.experiment.orig ${EGROUPDIR}/kernel/Makefile
 
 run_control:
 	@echo 'Begin run_control'
