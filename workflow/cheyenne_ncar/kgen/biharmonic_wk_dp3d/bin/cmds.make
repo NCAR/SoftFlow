@@ -112,11 +112,11 @@ config:
 #		qsub -W block=true -v EXEC=${WORKDIR}/build/src/preqx/preqx,NAMELIST=./test_ne8.nl ${BINDIR}/job.${CPU}.submit
 
 run:
-	${KGEN} \
+	cd ${WORKDIR}/run; ${KGEN} \
 	--cmd-clean "cd ${WORKDIR}/build; make clean" \
 	--cmd-build "cd ${WORKDIR}/build; make -j 8 ${TEST}" \
 	--cmd-run "cd ${WORKDIR}/run;  qsub -W block=true -v EXEC=${WORKDIR}/build/src/preqx/preqx,NAMELIST=./test_ne8.nl ${BINDIR}/job.${CPU}.submit" \
-	--exclude-ini ./exclude.ini \
+	--exclude-ini ${INCDIR}/exclude.ini \
 	--mpi enable \
 	--openmp enable \
 	--outdir ${WORKDIR} \

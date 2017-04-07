@@ -6,7 +6,7 @@
 #PBS -q regular
 #PBS -j oe
 #PBS -m abe
-#PBS -M youngsun@ucar.edu
+##PBS -M youngsun@ucar.edu
 #PBS -l select=3:ncpus=36:mpiprocs=36
 
 export OMP_NUM_THREADS=1
