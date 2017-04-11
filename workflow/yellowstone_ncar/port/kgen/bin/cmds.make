@@ -9,7 +9,7 @@ KGEN := /glade/u/home/youngsun/repos/github/KGen
 
 MAKEFILEDIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
-WORKDIR := /glade/scratch/youngsun/cylcworkdir/port
+WORKDIR := /glade/scratch/youngsun/cylcworkspace/port
 
 SUITEDIR := ${MAKEFILEDIR}/..
 INCDIR := ${SUITEDIR}/inc
@@ -55,27 +55,24 @@ cylc_rmport:
 ####################
 
 copy:
-	@echo 'Copying ${ACTION}_${WAVE}_${TEST}'
-	mkdir -p ${WORKDIR}/${ACTION}_${WAVE}_${TEST}/src
-	cp -R -u -p ${PORT}/* ${WORKDIR}/${ACTION}_${WAVE}_${TEST}/src
-ifeq (${ACTION},extract)
+	@echo 'Copying_${WAVE}_${TEST}'
+	mkdir -p ${WORKDIR}/${WAVE}_${TEST}/src
+	cp -R -u -p ${PORT}/* ${WORKDIR}/${WAVE}_${TEST}/src
 ifeq (${TEST},RRTMGP)
-	cp -f ${INCDIR}/radiation.F90 ${WORKDIR}/${ACTION}_${WAVE}_${TEST}/src/components/cam/src/physics/rrtmgp
-	cp -f ${INCDIR}/mo_rrtmgp_sw.F90 ${WORKDIR}/${ACTION}_${WAVE}_${TEST}/src/components/cam/src/physics/rrtmgp/ext
-	cp -f ${INCDIR}/mo_rrtmgp_lw.F90 ${WORKDIR}/${ACTION}_${WAVE}_${TEST}/src/components/cam/src/physics/rrtmgp/ext
-	cp -f ${INCDIR}/mo_gas_concentrations.F90 ${WORKDIR}/${ACTION}_${WAVE}_${TEST}/src/components/cam/src/physics/rrtmgp/ext
-endif
+	cp -f ${INCDIR}/radiation.F90 ${WORKDIR}/${WAVE}_${TEST}/src/components/cam/src/physics/rrtmgp
+	cp -f ${INCDIR}/mo_rrtmgp_sw.F90 ${WORKDIR}/${WAVE}_${TEST}/src/components/cam/src/physics/rrtmgp/ext
+	cp -f ${INCDIR}/mo_rrtmgp_lw.F90 ${WORKDIR}/${WAVE}_${TEST}/src/components/cam/src/physics/rrtmgp/ext
+	cp -f ${INCDIR}/mo_gas_concentrations.F90 ${WORKDIR}/${WAVE}_${TEST}/src/components/cam/src/physics/rrtmgp/ext
 endif
 
 run:
-	@echo 'Running ${ACTION}_${WAVE}_${TEST}'
-	${PRERUN_EXTRACT}; cd ${WORKDIR}/${ACTION}_${WAVE}_${TEST}; ${KGEN}/bin/kgen \
-		--cmd-clean "rm -rf ${WORKDIR}/${ACTION}_${WAVE}_${TEST}/${SCRIPT}_intel_bld/*" \
-		--cmd-build "cd ${WORKDIR}/${ACTION}_${WAVE}_${TEST}/src; export CYLC_CAM_ROOT=${WORKDIR}/${ACTION}_${WAVE}_${TEST}/src; export CYLC_WRKDIR=${WORKDIR}/${ACTION}_${WAVE}_${TEST}; ./${SCRIPT}-1d.sh -b" \
-		--cmd-run "cd ${WORKDIR}/${ACTION}_${WAVE}_${TEST}/src; export CYLC_CAM_ROOT=${WORKDIR}/${ACTION}_${WAVE}_${TEST}/src; export CYLC_WRKDIR=${WORKDIR}/${ACTION}_${WAVE}_${TEST}; bsub -K < ${SCRIPT}-1d.sh" \
+	@echo 'Running ${WAVE}_${TEST}'
+	${PRERUN_EXTRACT}; cd ${WORKDIR}/${WAVE}_${TEST}; ${KGEN}/bin/kgen \
+		--cmd-clean "rm -rf ${WORKDIR}/${WAVE}_${TEST}/${SCRIPT}_intel_bld/*" \
+		--cmd-build "cd ${WORKDIR}/${WAVE}_${TEST}/src; export CYLC_CAM_ROOT=${WORKDIR}/${WAVE}_${TEST}/src; export CYLC_WRKDIR=${WORKDIR}/${WAVE}_${TEST}; ./${SCRIPT}-1d.sh -b" \
+		--cmd-run "cd ${WORKDIR}/${WAVE}_${TEST}/src; export CYLC_CAM_ROOT=${WORKDIR}/${WAVE}_${TEST}/src; export CYLC_WRKDIR=${WORKDIR}/${WAVE}_${TEST}; bsub -K < ${SCRIPT}-1d.sh" \
 		-e "/glade/u/home/youngsun/repos/github/SoftFlow/workflow/yellowstone_ncar/port/kgen/inc/exclude.ini" \
-		--outdir ${WORKDIR}/${ACTION}_${WAVE}_${TEST}/output \
-		--invocation ${INVOKE} \
+		--outdir ${WORKDIR}/${WAVE}_${TEST}/output \
 		--timing repeat=10 \
 		--mpi enable \
-		${WORKDIR}/${ACTION}_${WAVE}_${TEST}/${CALLSITE}
+		${WORKDIR}/${WAVE}_${TEST}/${CALLSITE}
