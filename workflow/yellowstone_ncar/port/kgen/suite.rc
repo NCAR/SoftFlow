@@ -1,10 +1,10 @@
 #!jinja2
 
-{# set TESTS = [ 'RRTMG', 'RRTMGP' ] #}
-{# set WAVES = [ 'SW', 'LW' ] #}
+{% set TESTS = [ 'RRTMG', 'RRTMGP' ] %}
+{% set WAVES = [ 'SW', 'LW' ] %}
 
-{% set TESTS = [ 'RRTMGP' ] %}
-{% set WAVES = [ 'SW' ] %}
+{# set TESTS = [ 'RRTMGP' ] #}
+{# set WAVES = [ 'SW' ] #}
 
 {% set SCRIPTS = { 'RRTMG': 'f19c5aqportm', 'RRTMGP': 'f19c5aqrpportm' } %}
 {% set SRCPATH = 'src/components/cam/src/physics/' %}
