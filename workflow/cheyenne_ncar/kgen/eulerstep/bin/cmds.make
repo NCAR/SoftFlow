@@ -5,10 +5,10 @@
 ##############
 
 TEST := preqx
-CPU := SNB
+CPU := BDW
 
 SCRATCH=/glade/scratch/youngsun
-HOMME := ${HOME}/apps/homme/dungeon20
+HOMME := ${HOME}/apps/homme/trunk
 
 MAKEFILEDIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
@@ -20,6 +20,8 @@ SOFTFLOWDIR := ${SUITEDIR}/../../../../lib/python
 INCDIR := ${SUITEDIR}/inc
 PYTHONDIR := ${SUITEDIR}/lib/python:${SOFTFLOWDIR}
 #DATADIR := ${WORKDIR}/data
+
+KGEN := ${HOME}/repos/github/KGen/bin/kgen
 
 #################
 # Cylc useful commands
@@ -67,18 +69,12 @@ preprocess:
 copy:
 	@echo 'Begin copy'
 	mkdir -p ${WORKDIR}/homme
+	mkdir -p ${WORKDIR}/build
+	mkdir -p ${WORKDIR}/run/movies
 	cp -R -u -p ${HOMME}/* ${WORKDIR}/homme
-	#cp -f ${INCDIR}/prim_main.F90 ${WORKDIR}/homme/src/prim_main.F90
-	#cp -f ${INCDIR}/prim_advection_mod.F90 ${WORKDIR}/homme/src/share
-	#cp -f ${INCDIR}/FindExtrae.cmake ${WORKDIR}/homme/cmake
-	#cp -f ${INCDIR}/HommeMacros.cmake ${WORKDIR}/homme/cmake
-	#cp -f ${INCDIR}/extrae.xml ${WORKDIR}/run
-
-
 
 config:
 	@echo 'Begin config'
-	mkdir -p ${WORKDIR}/build
 	cd ${WORKDIR}/build; rm -rf CMakeFiles CMakeCache.txt
 	cd ${WORKDIR}/build; cmake \
 		-DQSIZE_D=10 \
@@ -98,18 +94,26 @@ config:
         #-DENABLE_OPENMP=TRUE \
         #-DEXTRAE_DIR:PATH=/global/homes/g/grnydawn/opt/extrae/3.4.1 \
 
-clean:
-	@echo 'Begin clean'
-	cd ${WORKDIR}/build; make clean
-
-build:
-	@echo 'Begin build'
-	cd ${WORKDIR}/build; make -j 6 ${TEST}
+#clean:
+#	@echo 'Begin clean'
+#	cd ${WORKDIR}/build; make clean
+#
+#build:
+#	@echo 'Begin build'
+#	cd ${WORKDIR}/build; make -j 6 ${TEST}
+#
+#run:
+#	@echo 'Begin run'
+#	cd ${WORKDIR}/run; \
+#		qsub -W block=true -v EXEC=${WORKDIR}/build/src/preqx/preqx,NAMELIST=./test_ne8.nl ${BINDIR}/job.${CPU}.submit
 
 run:
-	@echo 'Begin run'
-	mkdir -p ${WORKDIR}/run/movies
-	cd ${WORKDIR}/run; \
-		rm -rf vcoord; cp -rf ${INCDIR}/vcoord .; \
-		rm -f ./test_ne8.nl; cp -f ${INCDIR}/test_ne8.nl .; \
-		bsub -K -env EXEC=${WORKDIR}/build/src/preqx/preqx,NAMELIST=./test_ne8.nl < ${BINDIR}/job.${CPU}.submit
+	cd ${WORKDIR}/run; ${KGEN} \
+	--cmd-clean "cd ${WORKDIR}/build; make clean" \
+	--cmd-build "cd ${WORKDIR}/build; make -j 8 ${TEST}" \
+	--cmd-run "cd ${WORKDIR}/run;  qsub -W block=true -v EXEC=${WORKDIR}/build/src/preqx/preqx,NAMELIST=./test_ne8.nl ${BINDIR}/job.${CPU}.submit" \
+	--exclude-ini ${INCDIR}/exclude.ini \
+	--mpi enable \
+	--openmp enable \
+	--outdir ${WORKDIR} \
+	${WORKDIR}/homme/src/share/viscosity_mod.F90

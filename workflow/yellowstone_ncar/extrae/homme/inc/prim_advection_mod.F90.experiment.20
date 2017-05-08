@@ -2,6 +2,11 @@
 #include "config.h"
 #endif
 
+#ifdef _COLLAPSE_AND_ALIGN
+#define OMP_COLLAPSE_SIMD  $OMP SIMD COLLAPSE(2)
+#define DIR_VECTOR_ALIGNED DIR$ VECTOR ALIGNED
+#endif
+
 #define _B4B 1
 ! If you activate both the new barrier code and the overlap feature the code
 ! will hang.  So we are deactivating the overlap feature for now.
@@ -853,8 +858,7 @@ module prim_advection_mod
   use kinds, only              : real_kind
   use dimensions_mod, only     : nlev, nlevp, np, qsize, ntrac, nc, nep
   use physical_constants, only : rgas, Rwater_vapor, kappa, g, rearth, rrearth, cp
-  use derivative_mod, only     : gradient, vorticity, gradient_wk, derivative_t, divergence, &
-                                 gradient_sphere, divergence_sphere
+  use derivative_mod, only     : derivative_t
   use element_mod, only        : element_t
   use fvm_control_volume_mod, only        : fvm_struct
   use spelt_mod, only          : spelt_struct
@@ -1035,7 +1039,9 @@ contains
           enddo
           call edgeVpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,ie)
        enddo
+       call t_startf('bndry_exchangeV.edgeAdv1')
        call bndry_exchangeV(hybrid,edgeAdv1,location='prim_advection_mod:1029')
+       call t_stopf('bndry_exchangeV.edgeAdv1')
        do ie=nets,nete
           call edgeVunpack(edgeAdv1,elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev),nlev,0,ie)
           do k=1,nlev
@@ -1165,7 +1171,9 @@ contains
           ! eta_dot_dpdn at nlevp is zero, so we dont boundary exchange it:
           call edgeVpack(edgeAdv1,eta_dot_dpdn(:,:,1:nlev),nlev,0,ie)
        enddo
+       call t_startf('bndry_exchangeV.edgeAdv1')
        call bndry_exchangeV(hybrid,edgeAdv1,location='prim_advection_mod:1159')
+       call t_stopf('bndry_exchangeV.edgeAdv1')
        do ie=nets,nete
           ! restor interior values.  we could avoid this if we created a global array for eta_dot_dpdn
           do k=1,nlevp
@@ -1798,7 +1806,9 @@ subroutine ALE_RKdss(elem, nets, nete, hy, deriv, dt, tl)
     enddo
     call edgeVpack(edgeveloc,elem(ie)%derived%vstar,2*nlev,0,ie)
   enddo
+  call t_startf('bndry_exchangeV.edgeveloc')
   call bndry_exchangeV(hy,edgeveloc,location='prim_advection_mod:1792')
+  call t_stopf('bndry_exchangeV.edgeveloc')
   do ie=nets,nete
     call edgeVunpack(edgeveloc,elem(ie)%derived%vstar,2*nlev,0,ie)
     do k=1, nlev
@@ -2186,7 +2196,7 @@ end subroutine ALE_parametric_coords
 !-----------------------------------------------------------------------------
   subroutine Prim_Advec_Tracers_remap_rk2( elem , deriv , hvcoord , flt , hybrid , dt , tl , nets , nete )
     use perf_mod      , only : t_startf, t_stopf            ! _EXTERNAL
-    use derivative_mod, only : divergence_sphere
+    use derivative_mod, only : divergence_sphere => divergence_sphere_routine
     use control_mod   , only : vert_remap_q_alg, qsplit
     use hybrid_mod    , only : get_loop_ranges, PrintHybrid
     use thread_mod    , only : omp_set_num_threads, omp_get_thread_num
@@ -2235,7 +2245,7 @@ end subroutine ALE_parametric_coords
         ! div( U dp Q),
         gradQ(:,:,1)=elem(ie)%derived%vn0(:,:,1,k)
         gradQ(:,:,2)=elem(ie)%derived%vn0(:,:,2,k)
-        elem(ie)%derived%divdp(:,:,k) = divergence_sphere(gradQ,deriv,elem(ie))
+        call divergence_sphere(gradQ,deriv,elem(ie),elem(ie)%derived%divdp(:,:,k))
         elem(ie)%derived%divdp_proj(:,:,k) = elem(ie)%derived%divdp(:,:,k)
       enddo
     enddo
@@ -2286,7 +2296,7 @@ end subroutine ALE_parametric_coords
     integer             , intent(in   ) :: rkstage , n0_qdp , np1_qdp , nets , nete , limiter_option
     real(kind=real_kind), intent(in   ) :: nu_p
     type(hybrid_t) :: hybrid
-    integer :: ie,q,k
+    integer :: ie,q,i,j,k
     integer :: kbeg,kend,qbeg,qend
     real(kind=real_kind) :: rrkstage
 #if USE_CUDA_FORTRAN
@@ -2300,9 +2310,15 @@ end subroutine ALE_parametric_coords
     do ie=nets,nete
       do q=qbeg,qend
         do k=kbeg,kend
-          elem(ie)%state%Qdp(:,:,k,q,np1_qdp) =               &
-                   ( elem(ie)%state%Qdp(:,:,k,q,n0_qdp) + &
-                     (rkstage-1)*elem(ie)%state%Qdp(:,:,k,q,np1_qdp) ) / rkstage
+          !OMP_COLLAPSE_SIMD
+          !DIR_VECTOR_ALIGNED
+          do j=1,np
+            do i=1,np
+              elem(ie)%state%Qdp(i,j,k,q,np1_qdp) =               &
+                           ( elem(ie)%state%Qdp(i,j,k,q,n0_qdp) + &
+                     (rkstage-1)*elem(ie)%state%Qdp(i,j,k,q,np1_qdp) ) / rkstage
+            enddo
+          enddo
         enddo
       enddo
     enddo
@@ -2311,9 +2327,15 @@ end subroutine ALE_parametric_coords
     do ie=nets,nete
       do q=qbeg,qend
         do k=kbeg,kend
-           elem(ie)%state%Qdp(:,:,k,q,np1_qdp) =               &
-               rrkstage *( elem(ie)%state%Qdp(:,:,k,q,n0_qdp) + &
-               (rkstage-1)*elem(ie)%state%Qdp(:,:,k,q,np1_qdp) )
+         !OMP_COLLAPSE_SIMD
+         !DIR_VECTOR_ALIGNED
+          do j=1,np
+            do i=1,np
+              elem(ie)%state%Qdp(i,j,k,q,np1_qdp) =               &
+                 rrkstage *( elem(ie)%state%Qdp(i,j,k,q,n0_qdp) + &
+                (rkstage-1)*elem(ie)%state%Qdp(i,j,k,q,np1_qdp) )
+            enddo
+          enddo
         enddo
       enddo
     enddo
@@ -2340,8 +2362,8 @@ end subroutine ALE_parametric_coords
   use hybrid_mod     , only : hybrid_t, PrintHybrid
   use hybrid_mod     , only : get_loop_ranges, threadOwnsTracer 
   use element_mod    , only : element_t
-  use derivative_mod , only : derivative_t, gradient_sphere, vorticity_sphere, limiter_optim_iter_full
-  use derivative_mod , only :divergence_sphere => divergence_sphere_routine
+  use derivative_mod , only : derivative_t, limiter_optim_iter_full
+  use derivative_mod , only : divergence_sphere => divergence_sphere_routine
   use edge_mod       , only : edgevpack, edgevunpack
   use bndry_mod      , only : bndry_exchangev
   use hybvcoord_mod  , only : hvcoord_t
@@ -2425,8 +2447,8 @@ end subroutine ALE_parametric_coords
     do ie = nets, nete 
       ! add hyperviscosity to RHS.  apply to Q at timelevel n0, Qdp(n0)/dp
       do k = kbeg, kend 
-        !$OMP SIMD COLLAPSE(2)
-        !dir$ vector aligned
+        !OMP_COLLAPSE_SIMD
+        !DIR_VECTOR_ALIGNED
         do j=1,np
           do i=1,np
             dp(i,j,k) = elem(ie)%derived%dp(i,j,k) - rhs_multiplier*dt*elem(ie)%derived%divdp_proj(i,j,k)
@@ -2439,7 +2461,7 @@ end subroutine ALE_parametric_coords
           qmin_val(k)                  = minval(Qtens_biharmonic(:,:,k,q,ie))
           qmax_val(k)                  = maxval(Qtens_biharmonic(:,:,k,q,ie))
         enddo
- 
+
         do k= kbeg, kend
           if ( rhs_multiplier == 1 ) then
               qmin(k,q,ie)=min(qmin(k,q,ie),qmin_val(k)) 
@@ -2455,9 +2477,9 @@ end subroutine ALE_parametric_coords
     ! compute element qmin/qmax
     if ( rhs_multiplier == 0 ) then
       ! update qmin/qmax based on neighbor data for lim8
-!     call t_startf('euler_neighbor_minmax1')
+!      call t_startf('euler_neighbor_minmax1')
       call neighbor_minmax(hybrid,edgeAdvQminmax,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
-!     call t_stopf('euler_neighbor_minmax1')
+!      call t_stopf('euler_neighbor_minmax1')
     endif
 
     ! get niew min/max values, and also compute biharmonic mixing term
@@ -2469,8 +2491,8 @@ end subroutine ALE_parametric_coords
       if ( nu_p > 0 ) then
         do ie = nets, nete 
           do k = kbeg, kend
-            !$OMP SIMD COLLAPSE(2)
-            !dir$ vector aligned
+            !OMP_COLLAPSE_SIMD
+            !DIR_VECTOR_ALIGNED
             do j=1,np
               do i=1,np
                 dpdiss(i,j) = elem(ie)%derived%dpdiss_ave(i,j,k)
@@ -2478,8 +2500,8 @@ end subroutine ALE_parametric_coords
             enddo
             ! NOTE: divide by dp0 since we multiply by dp0 below
             do q = qbeg, qend
-              !$OMP SIMD COLLAPSE(2)
-              !dir$ vector aligned
+              !OMP_COLLAPSE_SIMD
+              !DIR_VECTOR_ALIGNED
               do j=1,np
                 do i=1,np
                   Qtens_biharmonic(i,j,k,q,ie)=Qtens_biharmonic(i,j,k,q,ie)*dpdiss(i,j)/dp0(k)
@@ -2504,8 +2526,8 @@ end subroutine ALE_parametric_coords
       do ie = nets, nete 
         do q = qbeg, qend
           do k = kbeg, kend
-            !$OMP SIMD COLLAPSE(2)
-            !dir$ vector aligned
+            !OMP_COLLAPSE_SIMD
+            !DIR_VECTOR_ALIGNED
             do j=1,np
               do i=1,np
                 ! note: biharmonic_wk() output has mass matrix already applied. Un-apply since we apply again below:
@@ -2518,16 +2540,16 @@ end subroutine ALE_parametric_coords
       enddo
       call neighbor_minmax_finish(hybrid,edgeAdvQminmax,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
 #else
-!     call t_startf('euler_neighbor_minmax2')
+!      call t_startf('euler_neighbor_minmax2')
       call neighbor_minmax(hybrid,edgeAdvQminmax,nets,nete,qmin(:,:,nets:nete),qmax(:,:,nets:nete))
-!     call t_stopf('euler_neighbor_minmax2')
+!      call t_stopf('euler_neighbor_minmax2')
       call biharmonic_wk_scalar(elem,qtens_biharmonic,deriv,edgeAdv,hybrid,nets,nete) 
 
       do ie = nets, nete 
         do q = qbeg, qend
           do k = kbeg, kend 
-            !$OMP SIMD COLLAPSE(2)
-            !dir$ vector aligned
+            !OMP_COLLAPSE_SIMD
+            !DIR_VECTOR_ALIGNED
             do j=1,np
               do i=1,np
             ! note: biharmonic_wk() output has mass matrix already applied. Un-apply since we apply again below:
@@ -2554,8 +2576,8 @@ end subroutine ALE_parametric_coords
     do k = kbeg, kend 
       ! derived variable divdp_proj() (DSS'd version of divdp) will only be correct on 2nd and 3rd stage
       ! but that's ok because rhs_multiplier=0 on the first stage:
-      !$OMP SIMD COLLAPSE(2)
-      !dir$ vector aligned
+      !OMP_COLLAPSE_SIMD
+      !DIR_VECTOR_ALIGNED
       do j=1,np
         do i=1,np
                dp(i,j,k) = elem(ie)%derived%dp(i,j,k) - rhs_multiplier * dt * elem(ie)%derived%divdp_proj(i,j,k)
@@ -2568,8 +2590,8 @@ end subroutine ALE_parametric_coords
         ! Note that the term dpdissk is independent of Q
         do k = kbeg, kend
           ! UN-DSS'ed dp at timelevel n0+1:
-          !$OMP SIMD COLLAPSE(2)
-          !dir$ vector aligned
+          !OMP_COLLAPSE_SIMD
+          !DIR_VECTOR_ALIGNED
           do j=1,np
             do i=1,np
               dpdissk(i,j,k) = dp(i,j,k) - dt * elem(ie)%derived%divdp(i,j,k)
@@ -2579,8 +2601,8 @@ end subroutine ALE_parametric_coords
             ! add contribution from UN-DSS'ed PS dissipation
 !           dpdiss(:,:) = ( hvcoord%hybi(k+1) - hvcoord%hybi(k) ) *
 !           elem(ie)%derived%psdiss_biharmonic(i,j)
-            !$OMP SIMD COLLAPSE(2)
-            !dir$ vector aligned
+            !OMP_COLLAPSE_SIMD
+            !DIR_VECTOR_ALIGNED
             do j=1,np
               do i=1,np
                 dpdiss(i,j) = elem(ie)%derived%dpdiss_biharmonic(i,j,k)
@@ -2601,8 +2623,8 @@ end subroutine ALE_parametric_coords
     do q = qbeg, qend
       do k = kbeg, kend
         ! div( U dp Q),
-        !$OMP SIMD COLLAPSE(2)
-        !dir$ vector aligned
+        !OMP_COLLAPSE_SIMD
+        !DIR_VECTOR_ALIGNED
         do j=1,np
           do i=1,np
             gradQ(i,j,1) = Vstar(i,j,1,k) * elem(ie)%state%Qdp(i,j,k,q,n0_qdp)
@@ -2612,8 +2634,8 @@ end subroutine ALE_parametric_coords
 
         call divergence_sphere( gradQ , deriv , elem(ie), div )
 
-        !$OMP SIMD COLLAPSE(2)
-        !dir$ vector aligned
+        !OMP_COLLAPSE_SIMD
+        !DIR_VECTOR_ALIGNED
         do j=1,np
           do i=1,np
             Qtens(i,j,k) = elem(ie)%state%Qdp(i,j,k,q,n0_qdp) - dt * div(i,j)
@@ -2622,8 +2644,8 @@ end subroutine ALE_parametric_coords
 
         ! optionally add in hyperviscosity computed above:
         if ( rhs_viss /= 0 ) then
-          !$OMP SIMD COLLAPSE(2)
-          !dir$ vector aligned
+          !OMP_COLLAPSE_SIMD
+          !DIR_VECTOR_ALIGNED
           do j=1,np
             do i=1,np
               Qtens(i,j,k) = Qtens(i,j,k) + Qtens_biharmonic(i,j,k,q,ie)
@@ -2644,8 +2666,8 @@ end subroutine ALE_parametric_coords
       ! dont do this earlier, since we allow np1_qdp == n0_qdp
       ! and we dont want to overwrite n0_qdp until we are done using it
       do k = kbeg, kend
-        !$OMP SIMD COLLAPSE(2)
-        !dir$ vector aligned
+        !OMP_COLLAPSE_SIMD
+        !DIR_VECTOR_ALIGNED
         do j=1,np
           do i=1,np
             elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = elem(ie)%spheremp(i,j) * Qtens(i,j,k)
@@ -2676,8 +2698,8 @@ end subroutine ALE_parametric_coords
       if ( DSSopt == DSSdiv_vdp_ave ) DSSvar => elem(ie)%derived%divdp_proj(:,:,:)
       ! also DSS extra field
       do k = kbeg, kend
-        !$OMP SIMD COLLAPSE(2)
-        !dir$ vector aligned
+        !OMP_COLLAPSE_SIMD
+        !DIR_VECTOR_ALIGNED
         do j=1,np
           do i=1,np
             DSSvar(i,j,k) = elem(ie)%spheremp(i,j) * DSSvar(i,j,k)
@@ -2689,7 +2711,9 @@ end subroutine ALE_parametric_coords
     endif
   enddo
 
+  call t_startf('bndry_exchangeV.edgeAdvp1')
   call bndry_exchangeV( hybrid , edgeAdvp1,location='prim_advection_mod:2603')
+  call t_stopf('bndry_exchangeV.edgeAdvp1')
 
   do ie = nets, nete 
     ! only perform this operation on thread which owns the first tracer
@@ -2700,8 +2724,8 @@ end subroutine ALE_parametric_coords
        kptr = qsize*nlev + kbeg -1
        call edgeVunpack( edgeAdvp1 , DSSvar(:,:,kbeg:kend) , kblk , kptr , ie )
        do k = kbeg, kend
-         !$OMP SIMD COLLAPSE(2)
-         !dir$ vector aligned
+         !OMP_COLLAPSE_SIMD
+         !DIR_VECTOR_ALIGNED
          do j=1,np
            do i=1,np
              DSSvar(i,j,k) = DSSvar(i,j,k) * elem(ie)%rspheremp(i,j)
@@ -2713,7 +2737,13 @@ end subroutine ALE_parametric_coords
       kptr = nlev*(q-1) + kbeg - 1
       call edgeVunpack( edgeAdvp1 , elem(ie)%state%Qdp(:,:,kbeg:kend,q,np1_qdp) , kblk , kptr , ie )
         do k = kbeg, kend 
-          elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%rspheremp(:,:) * elem(ie)%state%Qdp(:,:,k,q,np1_qdp)
+          !OMP_COLLAPSE_SIMD
+          !DIR_VECTOR_ALIGNED
+          do j=1,np
+            do i=1,np
+              elem(ie)%state%Qdp(i,j,k,q,np1_qdp) = elem(ie)%rspheremp(i,j) * elem(ie)%state%Qdp(i,j,k,q,np1_qdp)
+            enddo
+          enddo
         enddo
     enddo
   enddo
@@ -2740,7 +2770,8 @@ end subroutine ALE_parametric_coords
   use hybrid_mod, only : hybrid_t
   use hybrid_mod, only : get_loop_ranges
   use element_mod, only : element_t
-  use derivative_mod, only : derivative_t, divergence_sphere_wk, edge_flux_u_cg, gll_to_dgmodal, dgmodal_to_gll
+  use derivative_mod, only : derivative_t, edge_flux_u_cg, gll_to_dgmodal, dgmodal_to_gll
+  use derivative_mod, only : divergence_sphere_wk => divergence_sphere_wk_routine
   use edge_mod, only : edgevpack, edgevunpack, edgedgvunpack
   use bndry_mod, only : bndry_exchangev
   use hybvcoord_mod, only : hvcoord_t
@@ -2755,7 +2786,7 @@ end subroutine ALE_parametric_coords
   type (derivative_t)  , intent(in) :: deriv
 
   ! local
-  real (kind=real_kind), dimension(np,np)    :: divdp
+  real (kind=real_kind), dimension(np,np)    :: divdp, htemp
   real (kind=real_kind), dimension(npdg,npdg)    :: pshat
   real (kind=real_kind), dimension(0:np+1,0:np+1,nlev,qsize)    :: qedges
   real (kind=real_kind), dimension(np,np,2)    :: vtemp
@@ -2823,9 +2854,13 @@ end subroutine ALE_parametric_coords
   end do
 
   if(DSSopt==DSSno_var)then
-     call bndry_exchangeV( hybrid, edgeAdv,location='prim_advection_mod:2731')
+     call t_startf('bndry_exchangeV.edgeAdv')
+     call bndry_exchangeV( hybrid, edgeAdv,location='prim_advection_mod:2857')
+     call t_stopf('bndry_exchangeV.edgeAdv')
   else
-     call bndry_exchangeV( hybrid, edgeAdvp1,location='prim_advection_mod:2733')
+     call t_startf('bndry_exchangeV.edgeAdvp1')
+     call bndry_exchangeV( hybrid, edgeAdvp1,location='prim_advection_mod:2861')
+     call t_stopf('bndry_exchangeV.edgeAdvp1')
   endif
 
   do ie=nets,nete
@@ -2858,7 +2893,8 @@ end subroutine ALE_parametric_coords
            vtemp(:,:,1)=elem(ie)%state%Qdp(:,:,k,q,n0_qdp)*Vstar(:,:,1,k)
            vtemp(:,:,2)=elem(ie)%state%Qdp(:,:,k,q,n0_qdp)*Vstar(:,:,2,k)
 
-           divdp = divergence_sphere_wk(vtemp,deriv,elem(ie)) + &
+           call divergence_sphere_wk(vtemp,deriv,elem(ie),htemp)
+           divdp = htemp + &
                 edge_flux_u_cg( Vstar(:,:,:,k), elem(ie)%state%Qdp(:,:,k,q,n0_qdp),qedges(:,:,k,q),&
                 deriv, elem(ie), u_is_contra=.false.)
 
@@ -3102,7 +3138,9 @@ end subroutine ALE_parametric_coords
       enddo
     enddo
 
+    call t_startf('bndry_exchangeV.edgeAdv')
     call bndry_exchangeV( hybrid , edgeAdv,location='prim_advection_mod:3010')
+    call t_stopf('bndry_exchangeV.edgeAdv')
 
     do ie = nets, nete
       do q = qbeg, qend

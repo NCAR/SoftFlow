@@ -10,4 +10,9 @@
 #BSUB -q caldera           # queue
 
 ## Run the desired program
-EXECUTABLE
+export OMP_NUM_THREADS=1
+export OMP_STACKSIZE=128M
+ulimit -s unlimited
+
+### Run the executable
+mpirun.lsf  ${EXEC} < ${NAMELIST}

@@ -2,16 +2,6 @@
 #include "config.h"
 #endif
 
-module EXTRAE_MODULE
-    interface
-        subroutine extrae_user_function (enter)
-            integer*4, intent(in) :: enter
-        end subroutine extrae_user_function
-        subroutine extrae_next_hwc_set
-        end subroutine extrae_next_hwc_set
-    end interface
-end module EXTRAE_MODULE
-
 program prim_main
   ! -----------------------------------------------
 #ifdef _PRIM
@@ -67,7 +57,7 @@ program prim_main
   !-----------------
   use restart_io_mod , only : restartheader_t, writerestart
   !-----------------
-  use hybrid_mod, only : config_thread_region, get_number_threads
+  use hybrid_mod, only : config_thread_region
 
   implicit none
   type (element_t), pointer  :: elem(:)
@@ -108,11 +98,9 @@ program prim_main
   ! Set number of threads...
   ! =====================================
 
-  call get_number_threads(maxthreads)
-
   call t_initf('input.nl',LogPrint=par%masterproc, &
        Mpicom=par%comm, MasterTask=par%masterproc, &
-       maxthreads=maxthreads)
+       maxthreads=max_num_threads)
   call t_startf('Total')
   call t_startf('prim_init1')
   call prim_init1(elem,  fvm, par,tl)
@@ -263,9 +251,6 @@ program prim_main
 !JMD     print *,'prim_main: nets:nete ',nets,nete
      do while(tl%nstep<nstep)
         call t_startf('prim_run')
-
-        CALL extrae_user_function (1)
-
         !
         ! physics forcing from HOMME
         !
@@ -294,9 +279,6 @@ program prim_main
         if (MODULO(nstep_end,statefreq)==0 .or. nstep_end==tl%nstep0) then
            if (dt_phys>0) call prim_printstate_par_terminator(elem, tl,hybrid,hvcoord,nets,nete,  fvm,cly_mass_init,.false.) !terminator
         endif
-
-        CALL extrae_user_function (0)
-        CALL extrae_next_hwc_set
 
         call t_stopf('prim_run')
      end do

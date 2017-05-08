@@ -1,0 +1,17 @@
+#!/bin/bash -l
+
+#PBS -N cylchomme
+#PBS -A STDD0001
+#PBS -l walltime=01:00:00
+#PBS -q regular
+#PBS -j oe
+#PBS -m abe
+###PBS -M youngsun@ucar.edu
+#PBS -l select=3:ncpus=36:mpiprocs=36
+
+export OMP_NUM_THREADS=1
+export OMP_STACKSIZE=128M
+ulimit -s unlimited
+
+### Run the executable
+mpiexec_mpt omplace ${EXEC} < ${NAMELIST}

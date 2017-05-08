@@ -1,0 +1,35 @@
+#!jinja2
+
+title = "Building cmdtrace Python extension"
+
+[cylc]
+
+[scheduling]
+    [[dependencies]]
+        graph = """
+			preprocess => copy => build_cmdtrace => run_test
+		"""
+
+#export TASKROOTDIR=`python -c "import os; print os.path.commonprefix(['$CYLC_TASK_LOG_ROOT', '$CYLC_TASK_WORK_DIR'])"`
+
+[runtime]
+    [[preprocess]]
+        script = """
+        """
+
+    [[copy]]
+        script = """
+            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make copy
+        """
+    [[build_cmdtrace]]
+        script = """
+            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make build_cmdtrace
+		"""
+
+    [[run_test]]
+        script = """
+			make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make run_test
+        """
+
+[visualization]
+
