@@ -8,16 +8,16 @@
 #CHEMV4 := all/WACCM_imp_sol_vector/v04
 #CHEMDATA := all/WACCM_imp_sol_vector/data
 
-WORKDIR := /lustre/scratch/youngsun/cylcworkspace/${SUITENAME}
 MAKEFILEDIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
+WORKDIR := /lustre/scratch/youngsun/cylcworkspace/${SUITENAME}
+
 BINDIR := ${MAKEFILEDIR}
 SUITEDIR := ${MAKEFILEDIR}/..
 INCDIR := ${SUITEDIR}/inc
 CGROUPDIR := ${WORKDIR}/cgroup
 EGROUPDIR := ${WORKDIR}/egroup
 DATADIR := ${WORKDIR}/data
-
-SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
 
 ###########
 # Targets

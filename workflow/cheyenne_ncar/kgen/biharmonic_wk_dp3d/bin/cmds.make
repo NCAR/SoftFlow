@@ -10,8 +10,10 @@ CPU := BDW
 SCRATCH=/glade/scratch/youngsun
 HOMME := ${HOME}/apps/homme/dungeon20
 
-WORKDIR := ${SCRATCH}/cylcworkspace/${SUITENAME}_${CPU}
 MAKEFILEDIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
+WORKDIR := ${SCRATCH}/cylcworkspace/${SUITENAME}_${CPU}
+
 BINDIR := ${MAKEFILEDIR}
 SUITEDIR := ${MAKEFILEDIR}/..
 SOFTFLOWDIR := ${SUITEDIR}/../../../../lib/python
@@ -19,7 +21,6 @@ INCDIR := ${SUITEDIR}/inc
 PYTHONDIR := ${SUITEDIR}/lib/python:${SOFTFLOWDIR}
 #DATADIR := ${WORKDIR}/data
 
-SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
 
 KGEN := ${HOME}/repos/github/KGen/bin/kgen
 
@@ -111,11 +112,11 @@ config:
 #		qsub -W block=true -v EXEC=${WORKDIR}/build/src/preqx/preqx,NAMELIST=./test_ne8.nl ${BINDIR}/job.${CPU}.submit
 
 run:
-	${KGEN} \
+	cd ${WORKDIR}/run; ${KGEN} \
 	--cmd-clean "cd ${WORKDIR}/build; make clean" \
 	--cmd-build "cd ${WORKDIR}/build; make -j 8 ${TEST}" \
 	--cmd-run "cd ${WORKDIR}/run;  qsub -W block=true -v EXEC=${WORKDIR}/build/src/preqx/preqx,NAMELIST=./test_ne8.nl ${BINDIR}/job.${CPU}.submit" \
-	--exclude-ini ./exclude.ini \
+	--exclude-ini ${INCDIR}/exclude.ini \
 	--mpi enable \
 	--openmp enable \
 	--outdir ${WORKDIR} \

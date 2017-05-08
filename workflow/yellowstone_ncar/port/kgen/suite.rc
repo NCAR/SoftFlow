@@ -2,21 +2,12 @@
 
 {% set TESTS = [ 'RRTMG', 'RRTMGP' ] %}
 {% set WAVES = [ 'SW', 'LW' ] %}
-#{% set ACTIONS = [ 'extract', 'coverage' ] %}
-{% set ACTIONS = [ 'extract' ] %}
+
+{# set TESTS = [ 'RRTMGP' ] #}
+{# set WAVES = [ 'SW' ] #}
+
 {% set SCRIPTS = { 'RRTMG': 'f19c5aqportm', 'RRTMGP': 'f19c5aqrpportm' } %}
 {% set SRCPATH = 'src/components/cam/src/physics/' %}
-{% set INVOKES = {
-	'RRTMG': {
-		'SW': '0:0:1,10:0:179,3:0:119,0:0:0,14:0:55,1:0:1',
-		'LW': '11:0:55,9:0:55,0:0:0,0:0:1,1:0:1'
-	},
-	'RRTMGP': {
-		'SW': '7:0:182,0:0:0,0:0:1,1:0:1',
-		'LW': '7:0:181,0:0:0,0:0:1' 
-		}
-	}
-%}
 {% set CALLSITES = { 
 	'RRTMG': { 
 		'SW': SRCPATH +'rrtmg/radsw.F90:radsw:rad_rrtmg_sw:rrtmg_sw', 
@@ -38,9 +29,7 @@ title = "Task for generating longwave and shortwave kernels using KGen"
         graph = """
 {% for TEST in TESTS %}
 	{% for WAVE in WAVES %}
-		{% for ACTION in ACTIONS %}
-			preprocess => copy_{{ACTION}}_{{WAVE}}_{{TEST}} => run_{{ACTION}}_{{WAVE}}_{{TEST}}
-		{% endfor %}
+			preprocess => copy_{{WAVE}}_{{TEST}} => run_{{WAVE}}_{{TEST}}
 	{% endfor %}
 {% endfor %}
 		"""
@@ -53,19 +42,17 @@ title = "Task for generating longwave and shortwave kernels using KGen"
         """
 {% for TEST in TESTS %}
 	{% for WAVE in WAVES %}
-		{% for ACTION in ACTIONS %}
 
-    [[copy_{{ACTION}}_{{WAVE}}_{{TEST}}]]
+    [[copy_{{WAVE}}_{{TEST}}]]
         script = """
-            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make copy ACTION={{ACTION}} WAVE={{WAVE}} TEST={{TEST}}
+            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make copy WAVE={{WAVE}} TEST={{TEST}}
         """
 
-    [[run_{{ACTION}}_{{WAVE}}_{{TEST}}]]
+    [[run_{{WAVE}}_{{TEST}}]]
         script = """
-			make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make run ACTION={{ACTION}} WAVE={{WAVE}} TEST={{TEST}} SCRIPT={{SCRIPTS[TEST]}} INVOKE={{INVOKES[TEST][WAVE]}} CALLSITE={{CALLSITES[TEST][WAVE]}}
+			make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make run WAVE={{WAVE}} TEST={{TEST}} SCRIPT={{SCRIPTS[TEST]}} CALLSITE={{CALLSITES[TEST][WAVE]}}
         """
 
-		{% endfor %}
 	{% endfor %}
 {% endfor %}
 

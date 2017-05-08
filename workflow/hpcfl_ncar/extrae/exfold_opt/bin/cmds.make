@@ -11,6 +11,8 @@ EXPERIMENT_EXTRAE_TRACE := /users/youngsun/trepo/temp/experiment_yellowstone_nca
 
 WORKDIR := /lustre/scratch/youngsun/cylcworkspace/exfold_opt3_${CPU}
 MAKEFILEDIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
+
 BINDIR := ${MAKEFILEDIR}
 SUITEDIR := ${MAKEFILEDIR}/..
 SOFTFLOWDIR := ${SUITEDIR}/../../../..
@@ -19,8 +21,6 @@ INCDIR := ${SUITEDIR}/inc
 PYTHONPATH := ${SUITEDIR}/lib/python:${SOFTFLOWDIR}/lib/python:${PYTHONPATH}
 CGROUPDIR := ${WORKDIR}/cgroup
 EGROUPDIR := ${WORKDIR}/egroup
-
-SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
 
 CFOLDING := ${WORKDIR}/cgroup/control:original
 EFOLDING := ${WORKDIR}/egroup/experiment:optimized

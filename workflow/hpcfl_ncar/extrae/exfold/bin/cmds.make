@@ -9,8 +9,10 @@ CPU ?= SNB
 HOMME_CONTROL := /users/youngsun/kernels/port/rrtmg_lw
 HOMME_EXPERIMENT := /users/youngsun/kernels/port/rrtmgp_lw.v2
 
-WORKDIR := /lustre/scratch/youngsun/cylcworkspace/${SUITENAME}_${CPU}
 MAKEFILEDIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
+WORKDIR := /lustre/scratch/youngsun/cylcworkspace/${SUITENAME}_${CPU}
+
 BINDIR := ${MAKEFILEDIR}
 SUITEDIR := ${MAKEFILEDIR}/..
 SOFTFLOWDIR := ${SUITEDIR}/../../../..
@@ -19,7 +21,6 @@ INCDIR := ${SUITEDIR}/inc
 CGROUPDIR := ${WORKDIR}/cgroup
 EGROUPDIR := ${WORKDIR}/egroup
 
-SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
 
 EXTRAE_HOME ?= /ncar/asap/opt/extrae/3.3.0/snb/intel/17.0.0
 FOLDING_HOME ?= /ncar/asap/opt/folding/1.0.2

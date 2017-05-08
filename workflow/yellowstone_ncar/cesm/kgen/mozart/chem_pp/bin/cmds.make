@@ -4,18 +4,18 @@
 # Variables
 ##############
 
-POP := /glade/u/home/youngsun/apps/cesm/cesm2_0_alpha06b_marbl_dev_n31_cesm_pop_2_1_20170216
+CESM := /glade/u/home/youngsun/apps/cesm/cesm1_5_beta07
 KGEN := /glade/u/home/youngsun/repos/github/KGen
 
 MAKEFILEDIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
-WORKDIR := /glade/scratch/youngsun/cylcworkspace/pop
+WORKDIR := /glade/scratch/youngsun/cylcworkspace/cesm/chem_pp
 
 SUITEDIR := ${MAKEFILEDIR}/..
 INCDIR := ${SUITEDIR}/inc
 
 
-CALLSITE :=  components/pop/source/passive_tracers.F90:passive_tracers:set_interior_passive_tracers_3D:ecosys_driver_set_interior
+CALLSITE :=  components/cam/src/chemistry/mozart/mo_gas_phase_chemdr.F90:mo_gas_phase_chemdr:gas_phase_chemdr:imp_sol
 
 #################
 # Cylc useful commands
@@ -53,24 +53,24 @@ cylc_rmport:
 ####################
 
 copy:
-	@echo 'Copying ${ACTION}'
-	mkdir -p ${WORKDIR}/${ACTION}/src
-	cp -R -u -p ${POP}/* ${WORKDIR}/${ACTION}/src
-	#cp ${INCDIR}/createcase ${WORKDIR}/${ACTION}
+	@echo 'Copying CESM'
+	mkdir -p ${WORKDIR}/src
+	cp -R -u -p ${CESM}/* ${WORKDIR}/src
+	#cp ${INCDIR}/createcase ${WORKDIR}/
 
 createcase:
-	@echo 'Creating ${ACTION} case'
-	rm -rf ${WORKDIR}/${ACTION}/case
-	cd ${WORKDIR}/${ACTION}/src/cime/scripts; ./create_newcase \
+	@echo 'Creating a CESM case'
+	rm -rf ${WORKDIR}/case
+	cd ${WORKDIR}/src/cime/scripts; ./create_newcase \
 		-mach yellowstone \
 		-res T62_g16 \
 		-compset GECO \
-		-case ${WORKDIR}/${ACTION}/case \
+		-case ${WORKDIR}/case \
 		-project STDD0002
 
 configcase:
-	@echo 'Configuring ${ACTION} case'
-	cd ${WORKDIR}/${ACTION}/case; \
+	@echo 'Configuring a CESM case'
+	cd ${WORKDIR}/case; \
 	./xmlchange MAX_TASKS_PER_NODE=16,PES_PER_NODE=16; \
 	./xmlchange NTASKS_ATM=16,NTASKS_WAV=16,NTASKS_GLC=16,NTASKS_ROF=16,NTASKS_LND=16,NTASKS_ESP=16,NTHRDS_ESP=2; \
 	./xmlchange ROOTPE_CPL=16,ROOTPE_ICE=16; \
@@ -83,17 +83,17 @@ configcase:
 	./case.setup
 
 run:
-	@echo 'Running ${ACTION}'
-	cp -f ${INCDIR}/runcase ${WORKDIR}/${ACTION}/case
-	mkdir -p ${WORKDIR}/${ACTION}/output
-	cd ${WORKDIR}/${ACTION}/output; ${KGEN}/bin/kgen \
-		--cmd-clean "cd ${WORKDIR}/${ACTION}/case; ./case.build --clean" \
-		--cmd-build "cd ${WORKDIR}/${ACTION}/case; ./case.build" \
-		--cmd-run "cd ${WORKDIR}/${ACTION}/case; ./runcase" \
+	@echo 'Running KGEN' 
+	cp -f ${INCDIR}/runcase ${WORKDIR}/case
+	mkdir -p ${WORKDIR}/output
+	cd ${WORKDIR}/output; ${KGEN}/bin/kgen \
+		--cmd-clean "cd ${WORKDIR}/case; ./case.build --clean" \
+		--cmd-build "cd ${WORKDIR}/case; ./case.build" \
+		--cmd-run "cd ${WORKDIR}/case; ./runcase" \
 		-e "${INCDIR}/exclude.ini" \
-		--outdir ${WORKDIR}/${ACTION}/output \
-		--state-switch type=copy,directory=${WORKDIR}/${ACTION}/case/SourceMods/src.pop,clean="rm -f /glade/scratch/youngsun/cylcworkspace/pop/coverage/case/SourceMods/src.pop/*" \
+		--outdir ${WORKDIR}/output \
+		--state-switch type=copy,directory=${WORKDIR}/case/SourceMods/src.pop,clean="rm -f /glade/scratch/youngsun/cylcworkspace/pop/coverage/case/SourceMods/src.pop/*" \
 		--timing repeat=10 \
 		--mpi enable \
 		--openmp enable \
-		${WORKDIR}/${ACTION}/src/${CALLSITE}
+		${WORKDIR}/src/${CALLSITE}

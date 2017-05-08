@@ -7,8 +7,10 @@
 CPU ?= KNL
 
 TMPDIR ?= /global/cscratch1/sd/grnydawn 
-WORKDIR := ${TMPDIR}/cylcworkspace/${SUITENAME}_${CPU}
 MAKEFILEDIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
+WORKDIR := ${TMPDIR}/cylcworkspace/${SUITENAME}_${CPU}
+
 BINDIR := ${MAKEFILEDIR}
 SUITEDIR := ${MAKEFILEDIR}/..
 SOFTFLOWDIR := ${SUITEDIR}/../../../../lib/python
@@ -18,7 +20,6 @@ CGROUPDIR := ${WORKDIR}/cgroup
 EGROUPDIR := ${WORKDIR}/egroup
 DATADIR := ${WORKDIR}/data
 
-SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
 
 ALLOCTIME ?= 08:00:00
 

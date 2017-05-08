@@ -9,8 +9,10 @@ CPU ?= SNB
 HOMME_CONTROL := /glade/u/home/youngsun/kernels/port/rrtmg_lw
 HOMME_EXPERIMENT := /glade/u/home/youngsun/kernels/port/rrtmgp_lw.v2
 
-WORKDIR := /glade/scratch/youngsun/cylcworkspace/${SUITENAME}_${CPU}
 MAKEFILEDIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
+WORKDIR := /glade/scratch/youngsun/cylcworkspace/${SUITENAME}_${CPU}
+
 BINDIR := ${MAKEFILEDIR}
 SUITEDIR := ${MAKEFILEDIR}/..
 SOFTFLOWDIR := ${SUITEDIR}/../../../../lib/python
@@ -19,8 +21,6 @@ PYTHONDIR := ${SUITEDIR}/lib/python:${SOFTFLOWDIR}
 CGROUPDIR := ${WORKDIR}/cgroup
 EGROUPDIR := ${WORKDIR}/egroup
 #DATADIR := ${WORKDIR}/data
-
-SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
 
 EXTRAE_HOME ?= /glade/p/tdd/asap/contrib/extrae/3.3.0
 FOLDING_HOME ?= /glade/p/tdd/asap/contrib/folding/

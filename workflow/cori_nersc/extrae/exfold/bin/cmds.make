@@ -10,8 +10,10 @@ CPU ?= HSW
 HOMME_CONTROL := /global/homes/g/grnydawn/apps/rrtmg_lw
 HOMME_EXPERIMENT := /global/homes/g/grnydawn/apps/rrtmgp_lw.v2
 
-WORKDIR := ${CSCRATCH}/cylcworkspace/${SUITENAME}_${CPU}
 MAKEFILEDIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
+WORKDIR := ${CSCRATCH}/cylcworkspace/${SUITENAME}_${CPU}
+
 BINDIR := ${MAKEFILEDIR}
 SUITEDIR := ${MAKEFILEDIR}/..
 SOFTFLOWDIR := ${SUITEDIR}/../../../../lib/python
@@ -20,8 +22,6 @@ PYTHONDIR := ${SUITEDIR}/lib/python:${SOFTFLOWDIR}
 CGROUPDIR := ${WORKDIR}/cgroup
 EGROUPDIR := ${WORKDIR}/egroup
 #DATADIR := ${WORKDIR}/data
-
-SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
 
 EXTRAE_HOME ?= /global/homes/g/grnydawn/opt/extrae/3.4.1
 FOLDING_HOME ?= /global/homes/g/grnydawn/opt/folding/1.0.2

@@ -261,6 +261,7 @@ logical var_coef1
    endif
 
 
+   !$kgen begin_callsite biharmonic_wk_dp3d_loop1
    do ie=nets,nete
 
       do k=kbeg,kend
@@ -285,12 +286,12 @@ logical var_coef1
       call edgeVpack(edge3,dptens(:,:,kbeg:kend,ie),kblk,kptr,ie)
 
    enddo
+   !$kgen end_callsite biharmonic_wk_dp3d_loop1
   
    call t_startf('bndry_exchangeV.edge3') 
    call bndry_exchangeV(hybrid,edge3,location='viscosity_mod:285')
    call t_stopf('bndry_exchangeV.edge3') 
    
-   !$kgen begin_callsite biharmonic_wk_dp3d_loop2
    do ie=nets,nete
       rspheremv     => elem(ie)%rspheremp(:,:)
       
@@ -320,7 +321,7 @@ logical var_coef1
          tmp2(:,:)=rspheremv(:,:)*dptens(:,:,k,ie)
          dptens(:,:,k,ie)=laplace_sphere_wk(tmp2,deriv,elem(ie),var_coef=.true.)
       enddo
-!!!!$OMP BARRIER ! KGEN deletion
+!$OMP BARRIER ! KGEN deletion
       do k=kbeg,kend
          v(:,:,1)=rspheremv(:,:)*vtens(:,:,1,k,ie)
          v(:,:,2)=rspheremv(:,:)*vtens(:,:,2,k,ie)
@@ -329,7 +330,6 @@ logical var_coef1
 
       enddo
    enddo
-   !$kgen end_callsite biharmonic_wk_dp3d_loop2
 
 #ifdef DEBUGOMP
 !$OMP BARRIER

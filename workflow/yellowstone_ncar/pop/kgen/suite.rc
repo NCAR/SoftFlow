@@ -1,7 +1,6 @@
 #!jinja2
 
-#{% set ACTIONS = [ 'extract', 'coverage' ] %}
-{% set ACTIONS = [ 'coverage' ] %}
+{% set ACTIONS = [ 'extract' ] %}
 {% set SRCPATH = 'src/components/cam/src/physics/' %}
 {% set INVOKES = {
 	'RRTMG': {
