@@ -73,6 +73,7 @@ run:
 		--cmd-run "cd ${WORKDIR}/${WAVE}_${TEST}/src; export CYLC_CAM_ROOT=${WORKDIR}/${WAVE}_${TEST}/src; export CYLC_WRKDIR=${WORKDIR}/${WAVE}_${TEST}; bsub -K < ${SCRIPT}-1d.sh" \
 		-e "/glade/u/home/youngsun/repos/github/SoftFlow/workflow/yellowstone_ncar/port/kgen/inc/exclude.ini" \
 		--outdir ${WORKDIR}/${WAVE}_${TEST}/output \
+		--source alias=/glade/scratch:/glade2/scratch2 \
 		--timing repeat=10 \
 		--mpi enable \
 		${WORKDIR}/${WAVE}_${TEST}/${CALLSITE}
