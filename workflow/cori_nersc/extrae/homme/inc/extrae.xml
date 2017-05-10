@@ -22,8 +22,8 @@
   </pthread>
 
   <callers enabled="yes">
-    <mpi enabled="yes">1-3</mpi>
-    <sampling enabled="yes">1-6</sampling>
+    <mpi enabled="yes">1-6</mpi>
+    <sampling enabled="yes">1-8</sampling>
     <dynamic-memory enabled="no">1-3</dynamic-memory>
   </callers>
 

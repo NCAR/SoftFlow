@@ -7,8 +7,11 @@
 TEST := perfTest
 CPU ?= HSW
 
-HOMME_CONTROL := /global/homes/g/grnydawn/apps/homme_dungeon15_hsw_nggps/dungeon
-HOMME_EXPERIMENT := /global/homes/g/grnydawn/apps/homme_dungeon16_hsw_perfTest/dungeon
+#HOMME_CONTROL := /global/homes/g/grnydawn/apps/homme_dungeon15_hsw_nggps/dungeon
+#HOMME_EXPERIMENT := /global/homes/g/grnydawn/apps/homme_dungeon16_hsw_perfTest/dungeon
+
+HOMME_CONTROL := ${HOME}/apps/homme_ipcc02
+HOMME_EXPERIMENT := ${HOME}/apps/homme_dungeon28
 
 MAKEFILEDIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
@@ -23,8 +26,9 @@ CGROUPDIR := ${WORKDIR}/cgroup
 EGROUPDIR := ${WORKDIR}/egroup
 #DATADIR := ${WORKDIR}/data
 
-EXTRAE_HOME ?= /global/homes/g/grnydawn/opt/extrae/3.4.1
-FOLDING_HOME ?= /global/homes/g/grnydawn/opt/folding/1.0.2
+#EXTRAE_HOME := /global/homes/g/grnydawn/opt/extrae/3.4.1
+EXTRAE_HOME ?= /usr/common/software/extrae/3.3.0/hsw/intel
+FOLDING_HOME := /global/homes/g/grnydawn/opt/folding/1.0.2
 
 #################
 # Cylc useful commands
@@ -76,20 +80,17 @@ copy_control:
 	mkdir -p ${CGROUPDIR}/homme
 	cp -R -u -p ${HOMME_CONTROL}/* ${CGROUPDIR}/homme
 	cp -f ${INCDIR}/prim_main.F90.control ${CGROUPDIR}/homme/src/prim_main.F90
-	cp -f ${INCDIR}/prim_advection_mod.F90 ${CGROUPDIR}/homme/src/share
 	cp -f ${INCDIR}/FindExtrae.cmake ${CGROUPDIR}/homme/cmake
 	cp -f ${INCDIR}/HommeMacros.cmake ${CGROUPDIR}/homme/cmake
-	cp -f ${INCDIR}/extrae.xml ${CGROUPDIR}/run
 
 copy_experiment:
 	@echo 'Begin copy_experiment'
 	mkdir -p ${EGROUPDIR}/homme
 	cp -R -u -p ${HOMME_EXPERIMENT}/* ${EGROUPDIR}/homme
 	cp -f ${INCDIR}/prim_main.F90.experiment ${EGROUPDIR}/homme/src/prim_main.F90
-	cp -f ${INCDIR}/prim_advection_mod.F90 ${EGROUPDIR}/homme/src/share
+	cp -f ${INCDIR}/prim_advection_mod.F90.experiment ${EGROUPDIR}/homme/src/share/prim_advection_mod.F90
 	cp -f ${INCDIR}/FindExtrae.cmake ${EGROUPDIR}/homme/cmake
 	cp -f ${INCDIR}/HommeMacros.cmake ${EGROUPDIR}/homme/cmake
-	cp -f ${INCDIR}/extrae.xml ${EGROUPDIR}/run
 
 config_control:
 	@echo 'Begin config_control'
@@ -152,6 +153,7 @@ build_experiment:
 run_control:
 	@echo 'Begin run_control'
 	mkdir -p ${CGROUPDIR}/run/movies
+	cp -f ${INCDIR}/extrae.xml.bursts ${CGROUPDIR}/run/extrae.xml
 	cd ${CGROUPDIR}/run; \
 		rm -f vcoord; ln -s ${CGROUPDIR}/build/tests/${TEST}/vcoord vcoord; \
 		rm -f ${TEST}.nl; cp ${CGROUPDIR}/build/tests/${TEST}/${TEST}.nl ${TEST}.nl; \
@@ -160,6 +162,7 @@ run_control:
 run_experiment:
 	@echo 'Begin run_experiment'
 	mkdir -p ${EGROUPDIR}/run/movies
+	cp -f ${INCDIR}/extrae.xml.bursts ${EGROUPDIR}/run/extrae.xml
 	cd ${EGROUPDIR}/run; \
 		rm -f vcoord; ln -s ${EGROUPDIR}/build/tests/${TEST}/vcoord vcoord; \
 		rm -f ${TEST}.nl; cp ${EGROUPDIR}/build/tests/${TEST}/${TEST}.nl ${TEST}.nl; \

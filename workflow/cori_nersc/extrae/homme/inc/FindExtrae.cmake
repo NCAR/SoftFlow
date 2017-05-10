@@ -8,7 +8,7 @@ IF (DEFINED EXTRAE_LIB)
   #SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L${EXTRAE_DIR}/lib -l${EXTRAE_LIB}")
   #SET(XML2_LIBRARY "/usr/common/software/libxml2/2.9.3/hsw/lib/libxml2.a")
   #SET(BFD_LIBRARY "/usr/lib64/libbfd.a")
-  SET(ExtraeS_LIBRARY "-L${EXTRAE_DIR}/lib -l${EXTRAE_LIB} -L/opt/cray/pe/papi/default/lib -lpapi -L/usr/common/software/libxml2/2.9.3/hsw/lib -lxml2 /usr/lib64/libbfd.a /usr/lib64/libiberty.a")
+  SET(ExtraeS_LIBRARY "-L${EXTRAE_DIR}/lib -l${EXTRAE_LIB} -L/opt/cray/pe/papi/default/lib -lpapi -L/usr/common/software/libxml2/2.9.3/hsw/lib -lxml2 -L/usr/common/software/libunwind/1.1/hsw/lib -lunwind /usr/lib64/libbfd.a /usr/lib64/libiberty.a")
   #SET(ExtraeS_LIBRARY "-L${EXTRAE_DIR}/lib -l${EXTRAE_LIB}")
 
 
@@ -20,7 +20,7 @@ ELSE ()
   #             PATH_SUFFIXES lib lib64
   #             NO_SYSTEM_ENVIRONMENT_PATH NO_CMAKE_SYSTEM_PATH)
   #SET(ExtraeS_LIBRARY "-L${EXTRAE_DIR}/lib -lmpitracef")
-  SET(ExtraeS_LIBRARY "-L${EXTRAE_DIR}/lib -lmpitracef -L/opt/cray/pe/papi/default/lib -lpapi -L/usr/common/software/libxml2/2.9.3/hsw/lib -lxml2 /usr/lib64/libbfd.a /usr/lib64/libiberty.a")
+  SET(ExtraeS_LIBRARY "-L${EXTRAE_DIR}/lib -lmpitracef -L/opt/cray/pe/papi/default/lib -lpapi -L/usr/common/software/libxml2/2.9.3/hsw/lib -lxml2 -L/usr/common/software/libunwind/1.1/hsw/lib -lunwind /usr/lib64/libbfd.a /usr/lib64/libiberty.a")
   #SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L${EXTRAE_DIR}/lib -lmpitracef")
   #SET(XML2_LIBRARY "/usr/common/software/libxml2/2.9.3/hsw/lib/libxml2.a")
   #SET(BFD_LIBRARY "/usr/lib64/libbfd.a")
