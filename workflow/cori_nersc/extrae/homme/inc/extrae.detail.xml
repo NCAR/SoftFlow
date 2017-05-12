@@ -1,10 +1,9 @@
 <?xml version='1.0'?>
 
 <trace enabled="yes"
- home="/usr/common/software/extrae/3.3.0/hsw/intel"
- initial-mode="bursts"
+ home="/global/homes/g/grnydawn/opt/extrae/3.4.1"
+ initial-mode="detail"
  type="paraver"
- xml-parser-id="Id: xml-parse.c 3918 2016-03-11 14:59:01Z harald $"
 >
 
   <mpi enabled="yes">
@@ -102,7 +101,7 @@
     <mpi-statistics enabled="yes" />
   </bursts>
 
-  <sampling enabled="yes" type="default" period="3m" variability="2m" />
+  <sampling enabled="no" type="default" period="10m" variability="5m" />
 
   <dynamic-memory enabled="no">
     <alloc enabled="yes" threshold="32768" />
@@ -111,7 +110,7 @@
 
   <input-output enabled="no" />
 
-  <merge enabled="yes" 
+  <merge enabled="no" 
     synchronization="default"
     tree-fan-out="16"
     max-memory="512"

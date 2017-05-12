@@ -1,6 +1,6 @@
 #!jinja2
 
-{% set CPUS = [ 'HSW' ] %}
+{% set CPUS = [ 'KNL' ] %}
 {# set CPUS = [ 'KNL', 'HSW' ] #}
 {% set CONSTRAINTS = { 'KNL': 'knl,quad,flat', 'HSW': 'haswell' } %}
 {% set PRERUN= { 'KNL': 'module swap craype-haswell craype-mic-knl; module load cmake; module load cray-hdf5/1.10.0; module load cray-netcdf; export CRAYPE_LINK_TYPE=dynamic', 'HSW': 'module load craype-haswell; module load cmake; module load cray-hdf5/1.10.0; module load cray-netcdf; module load extrae/3.3.0; module load papi/5.4.3.3; export CRAYPE_LINK_TYPE=dynamic' } %}
