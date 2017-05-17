@@ -16,7 +16,7 @@ program prim_main
   ! -----------------------------------------------
 #ifdef _PRIM
   use prim_driver_mod, only : prim_init1, prim_init2, prim_run, prim_finalize,&
-                              leapfrog_bootstrap, prim_run_subcycle
+      leapfrog_bootstrap, prim_run_subcycle, prim_commtest
   use hybvcoord_mod, only : hvcoord_t, hvcoord_init
 #else
 ! use these for dg3d
@@ -36,7 +36,7 @@ program prim_main
   ! -----------------------------------------------
   use dimensions_mod, only : nelemd, qsize, ntrac
   ! -----------------------------------------------
-  use control_mod, only : restartfreq, vfile_mid, vfile_int, runtype, integration, statefreq, tstep_type, rsplit, qsplit
+  use control_mod, only : restartfreq, vfile_mid, vfile_int, runtype, integration, statefreq, tstep_type, rsplit, qsplit, commtest
   ! -----------------------------------------------
   use element_mod, only : element_t
   !-----------------------------------------------
@@ -62,12 +62,12 @@ program prim_main
   use prim_movie_mod, only : prim_movie_output, prim_movie_finish,prim_movie_init
 #endif
   use common_movie_mod, only : nextoutputstep
-  use perf_mod, only : t_initf, t_prf, t_finalizef, t_startf, t_stopf ! _EXTERNAL
-
+  use perf_mod, only : t_initf, t_prf, t_finalizef, t_startf, t_stopf ! EXTERNAL
+  use perf_utils, only : t_detail_minimal, t_detail_low, t_detail_medium, t_detail_high, t_detail_max ! EXTERNAL
   !-----------------
   use restart_io_mod , only : restartheader_t, writerestart
   !-----------------
-  use hybrid_mod, only : config_thread_region, get_number_threads
+  use hybrid_mod, only : config_thread_region
 
   implicit none
   type (element_t), pointer  :: elem(:)
@@ -108,15 +108,13 @@ program prim_main
   ! Set number of threads...
   ! =====================================
 
-  call get_number_threads(maxthreads)
-
-  call t_initf('input.nl',LogPrint=par%masterproc, &
+  call t_initf(LogPrint=par%masterproc, &
        Mpicom=par%comm, MasterTask=par%masterproc, &
-       maxthreads=maxthreads)
-  call t_startf('Total')
-  call t_startf('prim_init1')
+       maxthreads=max_num_threads)
+  call t_startf('Total',t_detail_minimal)
+  call t_startf('prim_init1', t_detail_high)
   call prim_init1(elem,  fvm, par,tl)
-  call t_stopf('prim_init1')
+  call t_stopf('prim_init1',t_detail_high)
 
 
   ! =====================================
@@ -158,7 +156,7 @@ program prim_main
 #endif
 
   if(par%masterproc) print *,"Primitive Equation Initialization..."
-  call t_startf('prim_init2')
+  call t_startf('prim_init2', t_detail_high)
   !$OMP PARALLEL NUM_THREADS(horz_num_threads), DEFAULT(SHARED), PRIVATE(hybrid,nets,nete)
   hybrid = config_thread_region(par,'horizontal')
   call get_loop_ranges(hybrid,ibeg=nets,iend=nete)
@@ -166,7 +164,7 @@ program prim_main
   call prim_init2(elem, fvm, hybrid, nets, nete, tl, hvcoord)
 
   !$OMP END PARALLEL
-  call t_stopf('prim_init2')
+  call t_stopf('prim_init2', t_detail_high)
 
   hybrid = config_thread_region(par,'serial')
   
@@ -240,9 +238,7 @@ program prim_main
   end if
 
   if(par%masterproc) print *,"Entering main timestepping loop"
-  call t_startf('prim_main_loop')
-! call vprof_start()
-! call summary_start()
+  call t_startf('prim_main_loop', t_detail_minimal)
   do while(tl%nstep < nEndStep)
 
      !$OMP PARALLEL NUM_THREADS(horz_num_threads), DEFAULT(SHARED), PRIVATE(hybrid,nets,nete)
@@ -264,9 +260,9 @@ program prim_main
 
 !JMD     print *,'prim_main: nets:nete ',nets,nete
      do while(tl%nstep<nstep)
-        call t_startf('prim_run')
+        call t_startf('prim_run', t_detail_low)
 
-        CALL extrae_user_function (1)
+        call extrae_user_function (1)
 
         !
         ! physics forcing from HOMME
@@ -286,7 +282,11 @@ program prim_main
         endif
 
         if (tstep_type>0) then  ! forward in time subcycled methods
-           call prim_run_subcycle(elem, fvm, hybrid,nets,nete, tstep, tl, hvcoord,1)
+           if(commtest) then  
+               call prim_commtest(hybrid,nets,nete,tl)
+           else
+               call prim_run_subcycle(elem, fvm, hybrid,nets,nete, tstep, tl, hvcoord,1)
+           endif
         else  ! leapfrog
            call prim_run(elem, hybrid,nets,nete, tstep, tl, hvcoord, "leapfrog")
         endif
@@ -297,10 +297,10 @@ program prim_main
            if (dt_phys>0) call prim_printstate_par_terminator(elem, tl,hybrid,hvcoord,nets,nete,  fvm,cly_mass_init,.false.) !terminator
         endif
 
-        CALL extrae_user_function (0)
-        CALL extrae_next_hwc_set
+        call extrae_user_function (0)
+        call extrae_next_hwc_set
 
-        call t_stopf('prim_run')
+        call t_stopf('prim_run', t_detail_low)
      end do
      !$OMP END PARALLEL 
      hybrid = config_thread_region(par,'serial')
@@ -323,9 +323,7 @@ program prim_main
         call WriteRestart(elem, hybrid%ithr,1,nelemd,tl)
      endif
   end do
-! call summary_stop() 
-! call vprof_stop ()
-  call t_stopf('prim_main_loop')
+  call t_stopf('prim_main_loop', t_detail_minimal)
 
   if(par%masterproc) print *,"Finished main timestepping loop",tl%nstep
   call prim_finalize(hybrid)
@@ -337,7 +335,7 @@ program prim_main
 #endif
 
 
-  call t_stopf('Total')
+  call t_stopf('Total', t_detail_minimal)
   if(par%masterproc) print *,"writing timing data"
 !   write(numproc_char,*) par%nprocs
 !   write(numtrac_char,*) ntrac

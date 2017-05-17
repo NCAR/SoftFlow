@@ -2,12 +2,14 @@
 
 title = "Task for extracting a kernel from Homme"
 
+{% set PRERUN = 'module load netcdf; module load pnetcdf; module load cmake; module swap impi impi/5.1.1.109' %}
+
 [cylc]
 
 [scheduling]
 	[[dependencies]]
 		graph = """
-			preprocess => copy => config => run
+			preprocess => copy => config => clean => build => run
 		"""
 
 [runtime]
@@ -24,12 +26,22 @@ title = "Task for extracting a kernel from Homme"
 
     [[config]]
         script = """
-            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make config
+            {{PRERUN}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make config
         """
+
+	[[clean]]
+		script = """
+			make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make clean
+		"""
+
+	[[build]]
+		script = """
+			{{PRERUN}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make build
+		"""
 
 	[[run]]
 		script = """
-			make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make run
+			{{PRERUN}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make run
 		"""
 
 [visualization]

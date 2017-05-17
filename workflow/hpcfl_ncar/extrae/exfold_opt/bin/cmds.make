@@ -6,12 +6,12 @@
 
 CPU ?= SNB
 
-CONTROL_EXTRAE_TRACE := /users/youngsun/trepo/temp/control_yellowstone_ncar_port_extrae_rrtmgp_lw_opt1.tar
-EXPERIMENT_EXTRAE_TRACE := /users/youngsun/trepo/temp/experiment_yellowstone_ncar_port_extrae_rrtmgp_lw_opt1.tar
+CONTROL_EXTRAE_TRACE := /users/youngsun/trepo/temp/control_yellowstone_ncar_port_extrae_rrtmgp_lw_opt6.tar
+EXPERIMENT_EXTRAE_TRACE := /users/youngsun/trepo/temp/experiment_yellowstone_ncar_port_extrae_rrtmgp_lw_opt6.tar
 
+WORKDIR := /lustre/scratch/youngsun/cylcworkspace/exfold_opt6_${CPU}
 MAKEFILEDIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
-WORKDIR := /lustre/scratch/youngsun/cylcworkspace/exfold_opt_${SNB}
 
 BINDIR := ${MAKEFILEDIR}
 SUITEDIR := ${MAKEFILEDIR}/..

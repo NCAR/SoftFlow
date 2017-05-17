@@ -4,17 +4,17 @@
 SVNTAG ?= https://svn-homme-model.cgd.ucar.edu/branch_tags/dungeon_tags/dungeon16
 TEST   ?= perfTest
 
-# Modify if following information is not matched with new test
-HOMME_EXE := ${BUILDDIR}/test_execs/${TEST}/${TEST}
-NAMELIST  := ${BUILDDIR}/tests/${TEST}/${TEST}.nl
-VCOORD    := ${BUILDDIR}/tests/${TEST}/vcoord
-
 # directories
 WORKDIR ?= ${CSCRATCH}/homme
 INSTALLDIR := ${WORKDIR}/install
 BUILDDIR := ${WORKDIR}/build
 RUNDIR := ${WORKDIR}/run
 CURDIR := ${PWD}
+
+# Modify if following information is not matched with new test
+HOMME_EXE := ${BUILDDIR}/test_execs/${TEST}/${TEST}
+NAMELIST  := ${BUILDDIR}/tests/${TEST}/${TEST}.nl
+VCOORD    := ${BUILDDIR}/tests/${TEST}/vcoord
 
 check:
 	# module load cray-hdf5/1.10.0

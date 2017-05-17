@@ -1,0 +1,23 @@
+#!/bin/bash -l
+
+#!/bin/bash -l
+
+#BSUB -P STDD0002          # project code
+#BSUB -W 00:30             # wall-clock time (hrs:mins)
+#BSUB -n 16                # number of tasks in job         
+#BSUB -R "span[ptile=16]"  # run 16 MPI tasks per node
+#BSUB -J exhomme            # job name
+#BSUB -o exhomme.%J.out     # output file name in which %J is replaced by the job ID
+#BSUB -e exhomme.%J.err     # error file name in which %J is replaced by the job ID
+#BSUB -q caldera           # queue
+
+export EXTRAE_HOME=/glade/p/tdd/asap/contrib/extrae/3.3.0
+#export EXTRAE_HOME=/glade/p/tdd/asap/contrib/extrae/3.4.3
+export EXTRAE_CONFIG_FILE=extrae.xml
+
+export LD_LIBRARY_PATH=${EXTRAE_HOME}/lib:/glade/apps/opt/papi/5.4.3/intel/15.0.3/lib:/glade/apps/opt/libxml2/2.9.0/gnu/4.7.2/lib:/glade/p/tdd/asap/contrib/libunwind/1.1/gnu/lib:${LD_LIBRARY_PATH}
+
+ulimit -s unlimited
+
+## Run the desired program
+mpirun EXECUTABLE < NAMELIST
