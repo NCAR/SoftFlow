@@ -46,8 +46,10 @@ ZLIB_VERSION := 1.2.11
 ZLIB_INSTALLDIR := ${HOME}/opt/zlib/${ZLIB_VERSION}
 
 # libpapi
-PAPI_VERSION := 5.5.1
-PAPI_INSTALLDIR := ${HOME}/opt/papi/${PAPI_VERSION}
+#PAPI_VERSION := 5.5.1
+#PAPI_INSTALLDIR := ${HOME}/opt/papi/${PAPI_VERSION}
+PAPI_VERSION := 5.5.1.1
+PAPI_INSTALLDIR := /opt/cray/pe/papi/5.5.1.1
 
 ##################
 # Check software
@@ -94,8 +96,8 @@ install-extrae:
 	cd ${EXTRAETMPDIR}/extrae-${EXTRAE_VERSION}; ./configure --prefix=${EXTRAE_INSTALLDIR} --enable-sampling \
 		--with-mpi=/global/common/cori/software/intel/impi/2017.1.132 --with-unwind=${UNWIND_INSTALLDIR} \
 		--with-libz=${ZLIB_INSTALLDIR} --with-binutils=${BUTILS_INSTALLDIR} --with-xml-prefix=${XML2_INSTALLDIR} \
-		--with-papi=/opt/cray/pe/papi/5.4.3.3 --without-dyninst
-	cd ${EXTRAETMPDIR}/extrae-${EXTRAE_VERSION}; make -j 8 install
+		--with-papi=${PAPI_INSTALLDIR} --without-dyninst
+	cd ${EXTRAETMPDIR}/extrae-${EXTRAE_VERSION}; make install
 
 install-folding:
 	cd ${EXTRAETMPDIR}/folding-${FOLDING_VERSION}-intelx86-64; \
