@@ -1,0 +1,72 @@
+# Makefile for KGEN-generated kernel
+
+FC_0 := /ncar/opt/intel/psxe-2015_update3/composer_xe_2015.3.187/bin/intel64/ifort
+FC_FLAGS_SET_0 := -ftz -convert big_endian -fp-model source -no-opt-dynamic-align -assume realloc_lhs -xHost -O2
+
+ALL_OBJS := radiation.o mo_rrtmgp_lw.o mo_gas_optics_specification.o mo_rrtmgp_kind.o mo_gas_optics_kernels.o mo_util_reorder.o mo_util_string.o mo_gas_concentrations.o mo_optical_props.o mo_optical_props_kernels.o mo_rrtmgp_constants.o mo_fluxes.o mo_rrtmgp_lw_solver.o mo_rrtmgp_solver_kernels.o shr_kind_mod.o mo_fluxes_byband.o kernel_driver.o kgen_utils.o tprof_mod.o
+
+run: build
+	./kernel.exe
+
+build: ${ALL_OBJS}
+	${FC_0} ${FC_FLAGS_SET_0}   -o kernel.exe $^
+
+radiation.o: radiation.F90 mo_rrtmgp_lw.o mo_gas_optics_specification.o mo_rrtmgp_kind.o mo_gas_optics_kernels.o mo_util_reorder.o mo_util_string.o mo_gas_concentrations.o mo_optical_props.o mo_optical_props_kernels.o mo_rrtmgp_constants.o mo_fluxes.o mo_rrtmgp_lw_solver.o mo_rrtmgp_solver_kernels.o shr_kind_mod.o mo_fluxes_byband.o kgen_utils.o tprof_mod.o
+	${FC_0} ${FC_FLAGS_SET_0} -c -o $@ $<
+
+mo_rrtmgp_lw.o: mo_rrtmgp_lw.F90 kgen_utils.o tprof_mod.o mo_gas_optics_specification.o mo_gas_concentrations.o mo_rrtmgp_kind.o mo_optical_props.o mo_fluxes.o mo_rrtmgp_lw_solver.o
+	${FC_0} ${FC_FLAGS_SET_0} -c -o $@ $<
+
+mo_gas_optics_specification.o: mo_gas_optics_specification.F90 kgen_utils.o tprof_mod.o mo_rrtmgp_kind.o mo_gas_optics_kernels.o mo_util_string.o mo_gas_concentrations.o mo_optical_props.o mo_rrtmgp_constants.o mo_util_reorder.o
+	${FC_0} ${FC_FLAGS_SET_0} -c -o $@ $<
+
+mo_rrtmgp_kind.o: mo_rrtmgp_kind.F90 kgen_utils.o tprof_mod.o
+	${FC_0} ${FC_FLAGS_SET_0} -c -o $@ $<
+
+mo_gas_optics_kernels.o: mo_gas_optics_kernels.F90 kgen_utils.o tprof_mod.o mo_rrtmgp_kind.o
+	${FC_0} ${FC_FLAGS_SET_0} -c -o $@ $<
+
+mo_util_reorder.o: mo_util_reorder.F90 kgen_utils.o tprof_mod.o mo_rrtmgp_kind.o
+	${FC_0} ${FC_FLAGS_SET_0} -c -o $@ $<
+
+mo_util_string.o: mo_util_string.F90 kgen_utils.o tprof_mod.o
+	${FC_0} ${FC_FLAGS_SET_0} -c -o $@ $<
+
+mo_gas_concentrations.o: mo_gas_concentrations.F90 kgen_utils.o tprof_mod.o mo_rrtmgp_kind.o
+	${FC_0} ${FC_FLAGS_SET_0} -c -o $@ $<
+
+mo_optical_props.o: mo_optical_props.F90 kgen_utils.o tprof_mod.o mo_rrtmgp_kind.o mo_optical_props_kernels.o
+	${FC_0} ${FC_FLAGS_SET_0} -c -o $@ $<
+
+mo_optical_props_kernels.o: mo_optical_props_kernels.F90 kgen_utils.o tprof_mod.o mo_rrtmgp_kind.o
+	${FC_0} ${FC_FLAGS_SET_0} -c -o $@ $<
+
+mo_rrtmgp_constants.o: mo_rrtmgp_constants.F90 kgen_utils.o tprof_mod.o mo_rrtmgp_kind.o
+	${FC_0} ${FC_FLAGS_SET_0} -c -o $@ $<
+
+mo_fluxes.o: mo_fluxes.F90 kgen_utils.o tprof_mod.o mo_rrtmgp_kind.o mo_gas_optics_specification.o
+	${FC_0} ${FC_FLAGS_SET_0} -c -o $@ $<
+
+mo_rrtmgp_lw_solver.o: mo_rrtmgp_lw_solver.F90 kgen_utils.o tprof_mod.o mo_optical_props.o mo_rrtmgp_kind.o mo_rrtmgp_solver_kernels.o
+	${FC_0} ${FC_FLAGS_SET_0} -c -o $@ $<
+
+mo_rrtmgp_solver_kernels.o: mo_rrtmgp_solver_kernels.F90 kgen_utils.o tprof_mod.o mo_rrtmgp_kind.o mo_rrtmgp_constants.o
+	${FC_0} ${FC_FLAGS_SET_0} -c -o $@ $<
+
+shr_kind_mod.o: shr_kind_mod.F90 kgen_utils.o tprof_mod.o
+	${FC_0} ${FC_FLAGS_SET_0} -c -o $@ $<
+
+mo_fluxes_byband.o: mo_fluxes_byband.F90 kgen_utils.o tprof_mod.o mo_fluxes.o mo_rrtmgp_kind.o mo_gas_optics_specification.o
+	${FC_0} ${FC_FLAGS_SET_0} -c -o $@ $<
+
+kernel_driver.o: kernel_driver.f90 radiation.o mo_rrtmgp_lw.o mo_gas_optics_specification.o mo_rrtmgp_kind.o mo_gas_optics_kernels.o mo_util_reorder.o mo_util_string.o mo_gas_concentrations.o mo_optical_props.o mo_optical_props_kernels.o mo_rrtmgp_constants.o mo_fluxes.o mo_rrtmgp_lw_solver.o mo_rrtmgp_solver_kernels.o shr_kind_mod.o mo_fluxes_byband.o kgen_utils.o tprof_mod.o
+	${FC_0} ${FC_FLAGS_SET_0} -c -o $@ $<
+
+kgen_utils.o: kgen_utils.f90
+	${FC_0} ${FC_FLAGS_SET_0} -c -o $@ $<
+
+tprof_mod.o: tprof_mod.f90
+	${FC_0} ${FC_FLAGS_SET_0} -c -o $@ $<
+
+clean:
+	rm -f kernel.exe *.mod ${ALL_OBJS}

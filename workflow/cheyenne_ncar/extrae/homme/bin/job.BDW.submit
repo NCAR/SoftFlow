@@ -1,0 +1,23 @@
+#!/bin/bash -l
+
+#PBS -N exhomme
+#PBS -A STDD0001
+#PBS -l walltime=00:30:00
+#PBS -q regular
+#PBS -j oe
+#PBS -m abe
+##PBS -M youngsun@ucar.edu
+#PBS -l select=3:ncpus=36:mpiprocs=36
+
+# TODO: 96 cores, 3nodes, ne 8
+
+export EXTRAE_HOME=/glade/p/tdd/asap/contrib/extrae/3.3.0
+#export EXTRAE_HOME=/glade/p/tdd/asap/contrib/extrae/3.4.3
+export EXTRAE_CONFIG_FILE=extrae.xml
+
+export LD_LIBRARY_PATH=${EXTRAE_HOME}/lib:/glade/apps/opt/papi/5.4.3/intel/15.0.3/lib:/glade/apps/opt/libxml2/2.9.0/gnu/4.7.2/lib:/glade/p/tdd/asap/contrib/libunwind/1.1/gnu/lib:${LD_LIBRARY_PATH}
+
+ulimit -s unlimited
+
+## Run the desired program
+mpiexec_mpt omplace EXECUTABLE < NAMELIST

@@ -1,0 +1,66 @@
+#!jinja2
+
+{% set tests = [ 'perfTest', 'perfTestWACCM' ] %}
+{% set groups = [ 'control', 'experiment' ] %}
+{% set PRERUN = { 'control': 'module load netcdf; module load pnetcdf; module load impi/5.1.3.210',
+	'experiment': 'module load netcdf; module load pnetcdf; module load impi/5.1.3.210' }  %}
+
+
+title = "Task for running Extrae"
+
+[cylc]
+
+[scheduling]
+	[[dependencies]]
+		graph = """
+    {% for test in tests  %}
+		{% for group in groups  %}
+			preprocess => copy_{{test}}_{{group}} => config_{{test}}_{{group}} => clean_{{test}}_{{group}} => build_{{test}}_{{group}}
+			build_{{test}}_{{group}} => run_{{test}}_{{group}} => collect_{{test}}_{{group}}
+		{% endfor %}
+    {% endfor %}
+		"""
+
+[runtime]
+    [[preprocess]]
+        script = """
+			export TASKROOTDIR=`python -c "import os; print os.path.commonprefix([$CYLC_TASK_LOG_ROOT, $CYLC_TASK_WORK_DIR])"`
+            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make preprocess TASKROOTDIR=$TASKROOTDIR
+        """
+    {% for test in tests  %}
+		{% for group in groups  %}
+
+    [[copy_{{test}}_{{group}}]]
+        script = """
+            {{PRERUN[group]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make copy_{{group}} TEST={{test}}
+        """
+
+    [[config_{{test}}_{{group}}]]
+        script = """
+            {{PRERUN[group]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make config_{{group}} TEST={{test}}
+        """
+
+	[[clean_{{test}}_{{group}}]]
+		script = """
+			{{PRERUN[group]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make clean_{{group}} TEST={{test}}
+		"""
+
+	[[build_{{test}}_{{group}}]]
+		script = """
+			{{PRERUN[group]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make build_{{group}} TEST={{test}}
+		"""
+
+	[[run_{{test}}_{{group}}]]
+		script = """
+			{{PRERUN[group]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make run_{{group}} TEST={{test}}
+		"""
+
+	[[collect_{{test}}_{{group}}]]
+		script = """
+			{{PRERUN[group]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make collect_{{group}} TEST={{test}}
+		"""
+
+		{% endfor %}
+    {% endfor %}
+
+[visualization]
