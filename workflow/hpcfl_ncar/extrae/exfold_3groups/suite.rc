@@ -1,0 +1,44 @@
+#!jinja2
+
+{% set PRERUN= 'set +u; source ~/intel.compiler; set -u; ulimit -s unlimited' %}
+{% set groups = [ 'control', 'middlestage', 'experiment' ] %}
+
+title = "Task for generating Extrae Folding plots"
+
+[cylc]
+
+[scheduling]
+	[[dependencies]]
+		graph = """
+{% for group in groups %}
+			preprocess => copy_{{group}} => fold_{{group}} => plot
+
+{% endfor %}
+		"""
+
+[runtime]
+    [[preprocess]]
+        script = """
+			export TASKROOTDIR=`python -c "import os; print os.path.commonprefix([$CYLC_TASK_LOG_ROOT, $CYLC_TASK_WORK_DIR])"`
+            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make preprocess TASKROOTDIR=$TASKROOTDIR
+        """
+    {% for group in groups  %}
+
+    [[copy_{{group}}]]
+        script = """
+            {{PRERUN}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make copy_{{group}}
+        """
+
+	[[fold_{{group}}]]
+		script = """
+			{{PRERUN}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make fold_{{group}}
+		"""
+
+    {% endfor %}
+
+	[[plot]]
+		script = """
+			{{PRERUN}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make plot
+		"""
+
+[visualization]
