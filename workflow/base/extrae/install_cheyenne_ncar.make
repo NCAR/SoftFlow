@@ -90,17 +90,20 @@ install-papi:
 #	cd ${EXTRAETMPDIR}/binutils-${BUTILS_VERSION}/bfd; make install
 
 install-unwind:
-	cd ${EXTRAETMPDIR}/libunwind-${UNWIND_VERSION}; ./configure --prefix=${UNWIND_INSTALLDIR}
-	cd ${EXTRAETMPDIR}/libunwind-${UNWIND_VERSION}; make -j 8 install
+	cd ${EXTRAETMPDIR}/libunwind-${UNWIND_VERSION}; ./configure --prefix=${UNWIND_INSTALLDIR} \
+		CC=gcc CXX=g++ FC=gfortran
+	cd ${EXTRAETMPDIR}/libunwind-${UNWIND_VERSION}; make clean; make -j 8 install
 
 install-extrae:
 	cd ${EXTRAETMPDIR}/extrae-${EXTRAE_VERSION}; ./configure --prefix=${EXTRAE_INSTALLDIR} --enable-sampling \
+		CC=gcc CXX=g++ FC=gfortran \
 		--with-mpi=/opt/sgi/mpt/mpt-2.15 --with-unwind=${UNWIND_INSTALLDIR} \
 		--with-libz=/usr --with-binutils=/usr --with-xml-prefix=/usr \
-		--with-papi=/glade/u/apps/opt/papi/5.4.3/intel/15.0.3 \
-		--with-papi-headers=/glade/u/apps/opt/papi/5.4.3/intel/15.0.3/include \
-		--with-papi-libs=/glade/u/apps/opt/papi/5.4.3/intel/15.0.3/lib --without-dyninst
-	cd ${EXTRAETMPDIR}/extrae-${EXTRAE_VERSION}; make -j 8 install
+		--with-papi=/glade/u/apps/ch/opt/papi/5.5.1/intel/16.0.3 \
+		--without-dyninst
+	cd ${EXTRAETMPDIR}/extrae-${EXTRAE_VERSION}; make clean; make -j 8 install
+
+		#--with-mpi=/opt/sgi/mpt/mpt-2.15 --with-unwind=${UNWIND_INSTALLDIR} \
 
 install-folding:
 	cd ${EXTRAETMPDIR}/folding-${FOLDING_VERSION}-intelx86-64; \

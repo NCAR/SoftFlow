@@ -2,6 +2,12 @@
 '''Plotting script for Extrae folding results
 '''
 
+# TODO:
+#absolute time
+#split vertically
+#meaningful event name
+#only one of three repetted pattern
+
 from __future__ import print_function
 
 import os

@@ -1,0 +1,28 @@
+#!jinja2
+
+title = "Task for generating longwave and shortwave kernels using KGen"
+
+[cylc]
+
+[scheduling]
+    [[dependencies]]
+        graph = """
+			preprocess => copy => run
+		"""
+
+[runtime]
+    [[preprocess]]
+        script = """
+        """
+
+    [[copy]]
+        script = """
+            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make copy
+        """
+
+    [[run]]
+        script = """
+			make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make run
+        """
+[visualization]
+

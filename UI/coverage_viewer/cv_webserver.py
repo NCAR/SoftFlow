@@ -14,19 +14,46 @@ curdir = os.path.dirname(os.path.realpath(__file__))
 sep = '/'
 TAB = 4
 
-html_frame = """<!DOCTYPE html>
-<html>
-    <head>
-        <title>KGen Coverage Viewer</title>
-        <style>
-            #code {
-                text-align: left;
-            }
-        </style>
-    </head>
-    <body>
-    %(body)s
-    </body>
+html_frame = """<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title>Fortran Coverage Viewer</title>
+  <meta name="description" content="The Fortran Coverage Viewer">
+  <meta name="author" content="Youngsung Kim">
+  <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+  <!--<link rel="stylesheet" href="highlight/styles/default.css"> -->
+  <link rel="stylesheet" href="highlight/styles/github.css">
+  <script src="highlight/highlight.pack.js"></script>
+
+  <script>
+  $(document).ready(function() {
+    $('.cover').each(function(i, block) {
+      hljs.highlightBlock(block);
+    });
+  });
+  </script>
+
+  <style>
+
+    .visit {
+        list-style-type: none;
+        background-color: #FFAAAA;
+    }
+
+    .novisit {
+        list-style-type: none;
+
+    }
+  </style>
+
+</head>
+
+<body>
+%(body)s
+</body>
 </html>"""
 
 loaddata = """
@@ -38,7 +65,7 @@ loaddata = """
         <hr width="50%%">
         <h3>Load KGen Coverage File</h3>
         <form id="data-form" method="GET" action="/data">
-                <input id="input_load" type="text" name="datapath" value='/glade/u/home/youngsun/trepo/temp/kgen_workspace/tests_functional_coverage_test_basic/coverage.ini'>
+                <input id="input_load" type="text" name="datapath" value='/Users/youngsun/Downloads/coverage/coverage.ini'>
                 <input id="submit_load" type="submit" value='Submit'>
         </form>
         </center>
@@ -46,8 +73,36 @@ loaddata = """
 </div>
 """
 
+#style="" onresize="this.style.margin-right=100"
+#
+#<tr>
+#<td width=100><span class="highlight">function to_upper(strIn) result(strOut)</span></td>
+#<td>########</td>
+#</tr>
+#<tr>
+#<td><span class="highlight">     character(len=*), intent(in) :: strIn</span></td>
+#<td>########</td>
+#</tr>
+#<tr>
+#<td><span class="highlight">     character(len=len(strIn)) :: strOut</span></td>
+#<td>########</td>
+#</tr>
+#<tr>
+#<td><span class="highlight">     integer :: i, j</span></td>
+#<td>########</td>
+#</tr>
+#<tr>
+#<td><span class="highlight">         if (j>= iachar("a") .and. j<=iachar("z") ) then</span></td>
+#<td>########</td>
+#</tr>
+#<tr>
+#<td><span class="highlight">end function</span></td>
+#<td>########</td>
+#</tr>
+#
 def page_index():
     return html_frame%{ 'body': loaddata }
+
 
 def page_data(data):
     return html_frame%{ 'body': data }
@@ -61,45 +116,109 @@ def page_view(fileid):
     visits = webserverdb['visits']
     linevisits = webserverdb['linevisits']
     filevisits = webserverdb['filevisits']
-    visits_min = webserverdb['visits_min']
-    visits_max = webserverdb['visits_max']
+    #visits_min = webserverdb['visits_min']
+    #visits_max = webserverdb['visits_max']
+    visits_min = min(linevisits[fileid].values())
+    visits_max = max(linevisits[fileid].values())
     visits_range = visits_max - visits_min
     path = webserverdb['files'][fileid]['path']
     lines = []
     with open(path) as f:
-        lines.append('<table style="width:100%">')
+        lines.append('<lu class=cover style="width:100%">')
         for idx, line in enumerate(f.read().split('\n')):
 
             encodedline = line.replace(' ', '&nbsp;')
+            if not encodedline:
+                encodedline = '&nbsp;'
 
-            # state update
             if fileid in blocks and str(idx+1) in blocks[fileid]:
-                row = '<tr><th id="code" style="background-color:white;">%s</th></tr>'%encodedline
-                if blocks[fileid][str(idx+1)]:
-                    curstate = 1
-                else:
-                    curstate = 2
+                nvisits = blocks[fileid][str(idx+1)]
+                strvisits = nvisits if nvisits else '0'
+                lines.append('<li class=visit data-nvisits=%s>%s</li>'%(strvisits, encodedline))
             else:
-                if curstate == 0:
-                    row = '<tr><th id="code" style="background-color:white;">%s</th></tr>'%encodedline
-                elif curstate in (1, 2):
-                    lline = line.strip().lower()
-                    if any( lline.startswith(key) for key in ('if', 'else', 'end') ):
-                        row = '<tr><th id="code" style="background-color:white;">%s</th></tr>'%encodedline
-                        curstate = 0
-                    elif curstate == 1:
-                        color = int( (linevisits[fileid][str(idx)] - visits_min) * 1.0 / visits_range * 155.0 + 100.0 )
-                        tooltip = str(linevisits[fileid][str(idx)])
-                        #tooltip = '%s, mpi: %s, openmp: %s'%(str(linevisits[fileid][str(idx)]), str(visits[fileid][str(idx)]['mpivisits']), \
-                        #    str(visits[fileid][str(idx)]['ompvisits']))
-                        #tooltip = '%s, mpi: %s, openmp: %s'%(str(linevisits[fileid][str(idx)]), str(visits[fileid][str(idx)]['mpivisits']), \
-                        #    str(visits[fileid][str(idx)]['ompvisits']))
-                        row = '<tr><th id="code" title="%s" style="background-color:rgb(%d,0,0);">%s</th></tr>'%(tooltip, color, encodedline)
-                    elif curstate == 2:
-                        row = '<tr><th id="code" title="No visit" style="background-color:grey;">%s</th></tr>'%encodedline
+                lines.append('<li class=novisit>%s</li>'%encodedline)
+# 
+#
+#            # state update
+#            if fileid in blocks and str(idx+1) in blocks[fileid]:
+#                row = '<tr><th id="code" style="background-color:white;">%s</th></tr>'%encodedline
+#                if blocks[fileid][str(idx+1)]:
+#                    curstate = 1
+#                else:
+#                    curstate = 2
+#            else:
+#                if curstate == 0:
+#                    row = '<tr><th id="code" style="background-color:white;">%s</th></tr>'%encodedline
+#                elif curstate in (1, 2):
+#                    lline = line.strip().lower()
+#                    if any( lline.startswith(key) for key in ('if', 'else', 'end') ):
+#                        row = '<tr><th id="code" style="background-color:white;">%s</th></tr>'%encodedline
+#                        curstate = 0
+#                    elif curstate == 1:
+#                        color = int( (linevisits[fileid][str(idx+1)] - visits_min) * 1.0 / visits_range * 155.0 + 100.0 )
+#                        tooltip = str(linevisits[fileid][str(idx+1)])
+#                        #tooltip = '%s, mpi: %s, openmp: %s'%(str(linevisits[fileid][str(idx)]), str(visits[fileid][str(idx)]['mpivisits']), \
+#                        #    str(visits[fileid][str(idx)]['ompvisits']))
+#                        #tooltip = '%s, mpi: %s, openmp: %s'%(str(linevisits[fileid][str(idx)]), str(visits[fileid][str(idx)]['mpivisits']), \
+#                        #    str(visits[fileid][str(idx)]['ompvisits']))
+#                        row = '<tr><th id="code" title="%s" style="background-color:rgb(%d,0,0);">%s</th></tr>'%(tooltip, color, encodedline)
+#                    elif curstate == 2:
+#                        row = '<tr><th id="code" title="No visit" style="background-color:grey;">%s</th></tr>'%encodedline
 
-            lines.append(row)
-        lines.append('</table>')
+        lines.append('</lu>')
+
+#        lines.append('<table style="width:100%">')
+#        for idx, line in enumerate(f.read().split('\n')):
+#
+#            encodedline = line.replace(' ', '&nbsp;')
+#
+#            lines.append('<tr>')
+#
+#            if fileid in blocks and str(idx+1) in blocks[fileid]:
+#                lines.append('<td width=2%%>M</td>')
+#                lines.append('<td width=2%$>T</td>')
+#                lines.append('<td width=50%%><span class=cover>%s</span></td>'%encodedline)
+#                if str(idx+1) in linevisits[fileid]:
+#                    nvisits = linevisits[fileid][str(idx+1)]
+#                    llen = int( 80.0 * nvisits / float(visits_max) )
+#                else:
+#                    nvisits = 0
+#                    llen = 0
+#                lines.append('<td width=46%%>%d<hr align=left noshade color=red style="display:inline-block" size=30 width=%d%%></td>'%(nvisits, llen))
+#            else:
+#                lines.append('<td width=2%%></td>')
+#                lines.append('<td width=2%%></td>')
+#                lines.append('<td width=50%%><span class=cover>%s</span></td>'%encodedline)
+#                lines.append('<td width=46%%></td>')
+#            lines.append('</tr>')
+##
+##            # state update
+##            if fileid in blocks and str(idx+1) in blocks[fileid]:
+##                row = '<tr><th id="code" style="background-color:white;">%s</th></tr>'%encodedline
+##                if blocks[fileid][str(idx+1)]:
+##                    curstate = 1
+##                else:
+##                    curstate = 2
+##            else:
+##                if curstate == 0:
+##                    row = '<tr><th id="code" style="background-color:white;">%s</th></tr>'%encodedline
+##                elif curstate in (1, 2):
+##                    lline = line.strip().lower()
+##                    if any( lline.startswith(key) for key in ('if', 'else', 'end') ):
+##                        row = '<tr><th id="code" style="background-color:white;">%s</th></tr>'%encodedline
+##                        curstate = 0
+##                    elif curstate == 1:
+##                        color = int( (linevisits[fileid][str(idx+1)] - visits_min) * 1.0 / visits_range * 155.0 + 100.0 )
+##                        tooltip = str(linevisits[fileid][str(idx+1)])
+##                        #tooltip = '%s, mpi: %s, openmp: %s'%(str(linevisits[fileid][str(idx)]), str(visits[fileid][str(idx)]['mpivisits']), \
+##                        #    str(visits[fileid][str(idx)]['ompvisits']))
+##                        #tooltip = '%s, mpi: %s, openmp: %s'%(str(linevisits[fileid][str(idx)]), str(visits[fileid][str(idx)]['mpivisits']), \
+##                        #    str(visits[fileid][str(idx)]['ompvisits']))
+##                        row = '<tr><th id="code" title="%s" style="background-color:rgb(%d,0,0);">%s</th></tr>'%(tooltip, color, encodedline)
+##                    elif curstate == 2:
+##                        row = '<tr><th id="code" title="No visit" style="background-color:grey;">%s</th></tr>'%encodedline
+#
+#        lines.append('</table>')
     #return '<br>\n'.join(lines).replace(' ', '&nbsp;')
     return html_frame%{ 'body': '\n'.join(lines) }
 
@@ -188,7 +307,7 @@ class CVWebServer(BaseHTTPRequestHandler):
 
                     # block
                     blocks = {}
-                    usedpairs = tuple( pair.strip().split(':') for pair in config.get('block', 'used_blocks').split(','))
+                    usedpairs = tuple( pair.strip().split(':') for pair in config.get('block', 'used_lines').split(','))
                     for fid, lnum in usedpairs:
                         if fid not in blocks:
                             blocks[fid] = {}
@@ -211,7 +330,7 @@ class CVWebServer(BaseHTTPRequestHandler):
                     for opt in config.options('invoke'):
                         mpi, omp, invoke = opt.split()
                         for visits_triple in config.get('invoke', opt).split(','):
-                            fid, lnum, nvisits = visits_triple.strip().split(':')
+                            fid, lnum, nvisits = tuple( e.strip() for e in visits_triple.strip().split(':') )
 
                             if fid not in visits:
                                 visits[fid] = {}
@@ -255,6 +374,9 @@ class CVWebServer(BaseHTTPRequestHandler):
                 elif path == '/view':
                     self.wfile.write(page_view(params['fileid']))
  
+                elif path == '/hbar':
+                    with open('hbar.html', 'r') as f:
+                        self.wfile.write(f.read())
                 else:
                     self.send_error(404,'File Not Found: %s' % self.path)
         except IOError:
