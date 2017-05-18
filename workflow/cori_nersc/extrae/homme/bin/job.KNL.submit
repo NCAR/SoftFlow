@@ -1,8 +1,9 @@
 #!/bin/bash
 #SBATCH -N 1
-#SBATCH -C knl,quad,flat
+#SBATCH -C knl,quad,cache
+##3#SBATCH -C knl,quad,flat
 #SBATCH -L SCRATCH
-#SBATCH -p regular
+#SBATCH -p debug
 #SBATCH -J myjob
 #SBATCH --mail-user=youngsun@ucar.edu
 #SBATCH -t 00:30:00
@@ -12,7 +13,17 @@ export OMP_NUM_THREADS=2
 export OMP_PLACES=threads
 export OMP_PROC_BIND=spread
 
+export EXTRAE_HOME=/global/homes/g/grnydawn/opt/extrae/3.4.1
+export EXTRAE_CONFIG_FILE=/global/homes/g/grnydawn/repos/github/SoftFlow/workflow/cori_nersc/extrae/homme/inc/extrae.bursts.xml
+
+export ZLIB_HOME=/usr
+export PAPI_HOME=/opt/cray/pe/papi/5.5.1.1
+export XML2_HOME=/usr/common/software/libxml2/2.9.3/hsw
+export BFD_HOME=/usr
+
+export LD_LIBRARY_PATH=${EXTRAE_HOME}/lib:${ZLIB_HOME}/lib:${PAPI_HOME}/lib:${XML2_HOME}/lib:${BFD_HOME}/lib:${LD_LIBRARY_PATH}
+
 ulimit -s unlimited
 
 #run the application:
-srun -n 36 -c 4 --cpu_bind=cores numactl -p 1 $1 < $2
+srun -n 72 -c 1 --cpu_bind=cores $1 < $2

@@ -19,7 +19,7 @@ try:
     from matplotlib.backends.backend_pdf import PdfPages
 
     colors = { idx:cname for idx, cname in enumerate(mcolors.cnames) }
-    pdf = PdfPages('exfold_report.pdf')
+    pdf = PdfPages('exfill_report.pdf')
 except:
     print ('ERROR: matplotlib module is not loaded.')
     sys.exit(-1)
@@ -33,6 +33,31 @@ LINEWIDTH = 3
 
 # Folded sampling caller level event range: 630000000 - 630000015
 CALLER_EVENTS = tuple( str(event) for event in range(630000000,(630000015+1)) )
+
+papi_descs = {
+'PAPI_RES_STL' : 'Stalled res cycles',
+'PAPI_STL_ICY' : 'No instr issue',
+'PAPI_TOT_INS' : 'Instr completed',
+'PAPI_BR_TKN' : 'Cond branch taken',
+'PAPI_BR_MSP' : 'Cond br mspredictd',
+'PAPI_BR_UCN' : 'Uncond branch',
+'PAPI_BR_INS' : 'Branches',
+'PAPI_BR_CN' : 'Cond branch',
+'PAPI_TLB_DM' : 'Data TLB misses',
+'PAPI_L2_TCH' : 'L2 cache hits',
+'PAPI_L2_TCA' : 'L2 cache accesses',
+'PAPI_L2_TCM' : 'L2 cache misses',
+'PAPI_L2_LDM' : 'L2 load misses',
+'PAPI_L1_ICH' : 'L1I cache hits',
+'PAPI_L1_ICA' : 'L1I cache accesses',
+'PAPI_L1_DCA' : 'L1D cache accesses',
+'PAPI_LD_INS' : 'Loads',
+'PAPI_LST_INS' : 'L/S completed',
+'PAPI_L1_DCM' : 'L1D cache misses',
+'PAPI_L1_ICM' : 'L1I cache misses',
+'PAPI_L1_TCM' : 'L1 cache misses',
+'PAPI_L1_LDM' : 'L1 load misses',
+}
 
 cfg = OrderedDict()
 
@@ -222,8 +247,10 @@ def read_pcf(pcffile):
                     elif len(m) == 3:
                         funcname = m[2][1:-1]
                     
-                    if funcname in cfg['fillfuncs']:
-                        funcmap[funcnum] = funcname
+                    for fillfunc in cfg['fillfuncs']:
+                        if funcname.endswith(fillfunc) or funcname.endswith(fillfunc + '_'):
+                            funcmap[funcnum] = fillfunc
+                            break
 
             elif stage == POSTREGION:
                 break
@@ -414,7 +441,6 @@ def gen_plotpages():
     for counter, regions in cfg['csvdata'].items():
 
         fig, ax = plt.subplots(figsize=(8, 6))
-        ax2 = fig.add_axes([0.15, 0.1, 0.8, 0.7])
 
         maxval = 0
         plotdata = OrderedDict()
@@ -422,39 +448,63 @@ def gen_plotpages():
             plotdata[region] = (vals.keys(), vals.values())
             maxval = max(maxval, max(plotdata[region][1]))
 
-        ax.text(0.5, 0.95, counter, fontsize=SUBTITLE_SIZE, \
+        ax.text(0.5, 0.97, counter, fontsize=SUBTITLE_SIZE, \
             horizontalalignment='center', verticalalignment='center')
+
+        ax.text(-0.1, 0.5, papi_descs.get(counter, ''), fontsize=LABEL_SIZE, \
+            horizontalalignment='center', verticalalignment='center', rotation=90)
+
         ax.axis('off')
-        
-        H = max(0.001, maxval*1.5)
-        ax2.axis([0, 100, 0, H])
-
-        ax2.set_xlabel('% elapsed time')
-        if counter.find('per_ins') > 0:
-            ax2.set_ylabel('events / instruction')
-        else:
-            ax2.set_ylabel('# events( $\mathregular{10^{6}}$ )')
-
-        plots = []
+ 
+        funcs = []
         labels = []
+        nplots = len(plotdata) 
+
+        #axplot = fig.add_axes([0.15, 0.1, 0.8, 0.7])
+        left = 0.15
+        width = 0.8
+        hdelta = 0.7 / nplots
+
         for idx, (region, (_xvals, yvals)) in enumerate(plotdata.items()):
 
-            xvals = [x*100 for x in _xvals]
+            bottom = 0.1 + idx * hdelta
 
-            for absfolddir, regionname in cfg['regions'].items():
-                if regionname == region:
-                    for cidx, (funcname, mask) in enumerate(cfg['prvdata'][absfolddir]['funcmask'].items()):
-                        fplot = ax2.fill_between(xvals, yvals, where=mask, color=colors[cidx+5])
+            axplot = fig.add_axes([left, bottom, width, hdelta*0.8])
+            axplot.set_title('%s (%s msec)'%(region, cfg['etimes'][cfg['folddirs'][idx]]), position=(0.5, 0.8))
 
-            plot = ax2.plot(xvals, yvals, color=colors[idx], linewidth=LINEWIDTH)
+            H = max(0.001, maxval*1.5)
+            etime = float(cfg['etimes'][cfg['folddirs'][idx]])
+            axplot.axis([0, etime, 0, H])
 
-            plots.append(plot[0])
-            if cfg['flags'].get('etime', False):
-                labels.append('%s (%s ms)'%(region, cfg['etimes'][cfg['folddirs'][idx]]))
+            if idx == 0:
+                axplot.set_xlabel('elapsed time (msec)')
+
+            if counter.find('per_ins') > 0:
+                axplot.set_ylabel('events / instruction')
             else:
-                labels.append(region)
+                axplot.set_ylabel('# events( $\mathregular{10^{6}}$ )')
 
-        plt.legend(plots, labels)
+                xvals = [x*etime for x in _xvals]
+
+                for absfolddir, regionname in cfg['regions'].items():
+                    if regionname == region:
+                        for cidx, (funcname, mask) in enumerate(cfg['prvdata'][absfolddir]['funcmask'].items()):
+                            fplot = axplot.fill_between(xvals, yvals, where=mask, color=colors[cidx+5])
+                            if funcname not in labels:
+                                funcs.append(fplot)
+                                labels.append(funcname)
+
+                plot = axplot.plot(xvals, yvals, color=colors[idx], linewidth=LINEWIDTH)
+
+                #if cfg['flags'].get('etime', False):
+                #    labels.append('%s (%s ms)'%(region, cfg['etimes'][cfg['folddirs'][idx]]))
+                #else:
+                #    labels.append(region)
+
+        #plt.legend(funcs, labels, loc=9)
+        #plt.legend(funcs, labels, bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=3, mode="expand", borderaxespad=0.)
+        plt.legend(funcs, labels, bbox_to_anchor=(0., 1.02, 1., .204), loc=3, ncol=2, mode="expand", borderaxespad=0.)
+
         #fig.tight_layout()
 
         pdf.savefig(fig)
@@ -465,10 +515,10 @@ def gen_plotpages():
 def gen_report():
 
     # front page
-    gen_frontpage()
+    #gen_frontpage()
     
     # summary page
-    gen_summarypage()
+    #gen_summarypage()
 
     # plot description page
     #gen_plotdescpage()
