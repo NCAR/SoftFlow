@@ -163,7 +163,7 @@ run_control:
 	@echo 'Begin run_control'
 	mkdir -p ${CGROUPDIR}/run/movies
 	#cp -f ${INCDIR}/extrae.xml.bursts ${CGROUPDIR}/run/extrae.xml
-	cp -f ${INCDIR}/extrae_bursts_1ms.xml ${CGROUPDIR}/run/extrae.xml
+	#cp -f ${INCDIR}/extrae_bursts_1ms.xml ${CGROUPDIR}/run/extrae.xml
 	cd ${CGROUPDIR}/run; \
 		#rm -f vcoord; ln -s ${CGROUPDIR}/build/tests/${TEST}/vcoord vcoord; \
 		rm -rf vcoord; mkdir vcoord; cp ${INCDIR}/*.ascii vcoord; \
@@ -174,7 +174,7 @@ run_experiment:
 	@echo 'Begin run_experiment'
 	mkdir -p ${EGROUPDIR}/run/movies
 	#cp -f ${INCDIR}/extrae.xml.bursts ${EGROUPDIR}/run/extrae.xml
-	cp -f ${INCDIR}/extrae_bursts_1ms.xml ${EGROUPDIR}/run/extrae.xml
+	#cp -f ${INCDIR}/extrae_bursts_1ms.xml ${EGROUPDIR}/run/extrae.xml
 	cd ${EGROUPDIR}/run; \
 		#rm -f vcoord; ln -s ${EGROUPDIR}/build/tests/${TEST}/vcoord vcoord; \
 		rm -rf vcoord; mkdir vcoord; cp ${INCDIR}/*.ascii vcoord; \
@@ -203,5 +203,6 @@ fold_experiment:
 
 plot:
 	@echo 'Begin plot'
-	#cd ${WORKDIR}; python ${PLOT_SCRIPT_EXFOLD} -t ${CFOLDING} ${EFOLDING}
-	cd ${WORKDIR}; python ${PLOT_SCRIPT_EXFILL} -t -e PAPI_L1_DCM -f compute_and_apply_rhs,euler_step,advance_hypervis_dp ${CFOLDING} ${EFOLDING}
+	cd ${WORKDIR}; python ${PLOT_SCRIPT_EXFOLD} -t ${CFOLDING} ${EFOLDING}
+	#cd ${WORKDIR}; python ${PLOT_SCRIPT_EXFILL} -t -e PAPI_L1_DCM -f compute_and_apply_rhs,euler_step,advance_hypervis_dp ${CFOLDING} ${EFOLDING}
+	cd ${WORKDIR}; python ${PLOT_SCRIPT_EXFILL} -t --exclude-per-ins -f compute_and_apply_rhs,euler_step,advance_hypervis_dp ${CFOLDING} ${EFOLDING}

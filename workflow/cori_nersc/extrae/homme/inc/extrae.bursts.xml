@@ -97,11 +97,11 @@
   </others>
 
   <bursts enabled="yes">
-    <threshold enabled="yes">500u</threshold>
+    <threshold enabled="yes">50u</threshold>
     <mpi-statistics enabled="yes" />
   </bursts>
 
-  <sampling enabled="yes" type="default" period="10m" variability="5m" />
+  <sampling enabled="yes" type="default" period="5m" variability="2m" />
 
   <dynamic-memory enabled="no">
     <alloc enabled="yes" threshold="32768" />
