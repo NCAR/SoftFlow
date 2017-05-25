@@ -9,7 +9,7 @@ KGEN := /glade/u/home/youngsun/repos/github/KGen
 
 MAKEFILEDIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
-WORKDIR := /glade/scratch/youngsun/cylcworkspace/port
+WORKDIR := /glade/scratch/youngsun/cylcworkspace/${SUITENAME}
 
 SUITEDIR := ${MAKEFILEDIR}/..
 INCDIR := ${SUITEDIR}/inc

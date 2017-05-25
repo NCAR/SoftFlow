@@ -97,7 +97,7 @@ copy_experiment:
 	cp -f ${INCDIR}/extrae.xml ${EGROUPDIR}/kernel
 	cp -f ${INCDIR}/mo_rrtmgp_lw.F90.v6 ${EGROUPDIR}/kernel/mo_rrtmgp_lw.F90
 	cp -f ${INCDIR}/radiation.F90.v6 ${EGROUPDIR}/kernel/radiation.F90
-	cp -f ${INCDIR}/Makefile.v6 ${EGROUPDIR}/kernel/Makefile
+	cp -f ${INCDIR}/Makefile.v7 ${EGROUPDIR}/kernel/Makefile
 
 clean_control:
 	@echo 'Begin clean_control'
