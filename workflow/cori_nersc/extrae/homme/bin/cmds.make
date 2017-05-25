@@ -19,15 +19,21 @@ WORKDIR := ${CSCRATCH}/cylcworkspace/${SUITENAME}_${CPU}
 
 BINDIR := ${MAKEFILEDIR}
 SUITEDIR := ${MAKEFILEDIR}/..
-SOFTFLOWDIR := ${SUITEDIR}/../../../../lib/python
+SOFTFLOWDIR := ${SUITEDIR}/../../../..
 INCDIR := ${SUITEDIR}/inc
-PYTHONDIR := ${SUITEDIR}/lib/python:${SOFTFLOWDIR}
+PYTHONDIR := ${SUITEDIR}/lib/python:${SOFTFLOWDIR}/lib/python
 CGROUPDIR := ${WORKDIR}/cgroup
 EGROUPDIR := ${WORKDIR}/egroup
 #DATADIR := ${WORKDIR}/data
 
 EXTRAE_HOME := /global/homes/g/grnydawn/opt/extrae/3.4.1
 FOLDING_HOME := /global/homes/g/grnydawn/opt/folding/1.0.2
+
+CFOLDING := ${CGROUPDIR}/run/${TEST}:ipcc02
+EFOLDING := ${EGROUPDIR}/run/${TEST}:dungeon28
+
+PLOT_SCRIPT_EXFOLD ?= ${SOFTFLOWDIR}/lib/python/plot_exfold.py
+PLOT_SCRIPT_EXFILL ?= ${SOFTFLOWDIR}/lib/python/plot_fill_exfold.py
 
 #################
 # Cylc useful commands
@@ -105,6 +111,8 @@ config_control:
         -DENABLE_PERFTEST=TRUE \
         -DEXTRAE_LIB=mpitracef \
         -DEXTRAE_DIR:PATH=${EXTRAE_HOME} \
+		-DADD_Fortran_FLAGS="-g ${INST}" \
+		-DOPT_FFLAGS=-O3 \
 		${CGROUPDIR}/homme
 
         #-DENABLE_OPENMP=TRUE \
@@ -124,6 +132,8 @@ config_experiment:
         -DENABLE_PERFTEST=TRUE \
         -DEXTRAE_LIB=mpitracef \
         -DEXTRAE_DIR:PATH=${EXTRAE_HOME} \
+		-DADD_Fortran_FLAGS=${INST} \
+		-DOPT_FFLAGS=-O3 \
 		${EGROUPDIR}/homme
 
         #-DENABLE_OPENMP=TRUE \
@@ -153,7 +163,7 @@ run_control:
 	@echo 'Begin run_control'
 	mkdir -p ${CGROUPDIR}/run/movies
 	#cp -f ${INCDIR}/extrae.xml.bursts ${CGROUPDIR}/run/extrae.xml
-	cp -f ${INCDIR}/extrae_bursts_1ms.xml ${CGROUPDIR}/run/extrae.xml
+	#cp -f ${INCDIR}/extrae_bursts_1ms.xml ${CGROUPDIR}/run/extrae.xml
 	cd ${CGROUPDIR}/run; \
 		#rm -f vcoord; ln -s ${CGROUPDIR}/build/tests/${TEST}/vcoord vcoord; \
 		rm -rf vcoord; mkdir vcoord; cp ${INCDIR}/*.ascii vcoord; \
@@ -164,7 +174,7 @@ run_experiment:
 	@echo 'Begin run_experiment'
 	mkdir -p ${EGROUPDIR}/run/movies
 	#cp -f ${INCDIR}/extrae.xml.bursts ${EGROUPDIR}/run/extrae.xml
-	cp -f ${INCDIR}/extrae_bursts_1ms.xml ${EGROUPDIR}/run/extrae.xml
+	#cp -f ${INCDIR}/extrae_bursts_1ms.xml ${EGROUPDIR}/run/extrae.xml
 	cd ${EGROUPDIR}/run; \
 		#rm -f vcoord; ln -s ${EGROUPDIR}/build/tests/${TEST}/vcoord vcoord; \
 		rm -rf vcoord; mkdir vcoord; cp ${INCDIR}/*.ascii vcoord; \
@@ -191,8 +201,8 @@ fold_experiment:
 	cd ${EGROUPDIR}/run; \
 		${FOLDING_HOME}/bin/folding ./${TEST}.prv "User function"
 
-plot_control:
-	@echo 'Not implemented yet.'
-
-plot_experiment:
-	@echo 'Not implemented yet.'
+plot:
+	@echo 'Begin plot'
+	cd ${WORKDIR}; python ${PLOT_SCRIPT_EXFOLD} -t ${CFOLDING} ${EFOLDING}
+	#cd ${WORKDIR}; python ${PLOT_SCRIPT_EXFILL} -t -e PAPI_L1_DCM -f compute_and_apply_rhs,euler_step,advance_hypervis_dp ${CFOLDING} ${EFOLDING}
+	cd ${WORKDIR}; python ${PLOT_SCRIPT_EXFILL} -t --exclude-per-ins -f compute_and_apply_rhs,euler_step,advance_hypervis_dp ${CFOLDING} ${EFOLDING}

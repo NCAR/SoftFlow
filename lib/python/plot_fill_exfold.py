@@ -2,6 +2,12 @@
 '''Plotting script for Extrae folding results
 '''
 
+# TODO:
+#absolute time
+#split vertically
+#meaningful event name
+#only one of three repetted pattern
+
 from __future__ import print_function
 
 import os
@@ -13,13 +19,28 @@ from collections import OrderedDict
 from csv import DictReader
 from datetime import datetime
 
+# Colormaps
+'''
+Accent, Accent_r, Blues, Blues_r, BrBG, BrBG_r, BuGn, BuGn_r, BuPu, BuPu_r, CMRmap, CMRmap_r, Dark2, Dark2_r, GnBu, GnBu_r, Greens, Greens_r, Greys, Greys_r, OrRd, OrRd_r, Oranges, Oranges_r, PRGn, PRGn_r, Paired, Paired_r, Pastel1, Pastel1_r, Pastel2, Pastel2_r, PiYG, PiYG_r, PuBu, PuBuGn, PuBuGn_r, PuBu_r, PuOr, PuOr_r, PuRd, PuRd_r, Purples, Purples_r, RdBu, RdBu_r, RdGy, RdGy_r, RdPu, RdPu_r, RdYlBu, RdYlBu_r, RdYlGn, RdYlGn_r, Reds, Reds_r, Set1, Set1_r, Set2, Set2_r, Set3, Set3_r, Spectral, Spectral_r, Wistia, Wistia_r, YlGn, YlGnBu, YlGnBu_r, YlGn_r, YlOrBr, YlOrBr_r, YlOrRd, YlOrRd_r, afmhot, afmhot_r, autumn, autumn_r, binary, binary_r, bone, bone_r, brg, brg_r, bwr, bwr_r, cool, cool_r, coolwarm, coolwarm_r, copper, copper_r, cubehelix, cubehelix_r, flag, flag_r, gist_earth, gist_earth_r, gist_gray, gist_gray_r, gist_heat, gist_heat_r, gist_ncar, gist_ncar_r, gist_rainbow, gist_rainbow_r, gist_stern, gist_stern_r, gist_yarg, gist_yarg_r, gnuplot, gnuplot2, gnuplot2_r,
+gnuplot_r, gray, gray_r, hot, hot_r, hsv, hsv_r, inferno, inferno_r, jet, jet_r, magma, magma_r, nipy_spectral, nipy_spectral_r, ocean, ocean_r, pink, pink_r, plasma, plasma_r, prism, prism_r, rainbow, rainbow_r, seismic, seismic_r, spectral, spectral_r, spring, spring_r, summer, summer_r, terrain, terrain_r, viridis, viridis_r, winter, winter_r
+'''
+
+# named colors
+'''
+{0: u'indigo', 1: u'gold', 2: u'hotpink', 3: u'firebrick', 4: u'indianred', 5: u'sage', 6: u'yellow', 7: u'mistyrose', 8: u'darkolivegreen', 9: u'olive', 10: u'darkseagreen', 11: u'pink', 12: u'tomato', 13: u'lightcoral', 14: u'orangered', 15: u'navajowhite', 16: u'lime', 17: u'palegreen', 18: u'darkslategrey', 19: u'greenyellow', 20: u'burlywood', 21: u'seashell', 22: u'mediumspringgreen', 23: u'fuchsia', 24: u'papayawhip', 25: u'blanchedalmond', 26: u'chartreuse', 27: u'dimgray', 28: u'black', 29: u'peachpuff', 30: u'springgreen', 31: u'aquamarine', 32: u'white', 33: u'orange', 34: u'lightsalmon', 35: u'darkslategray', 36: u'brown', 37: u'ivory', 38: u'dodgerblue', 39: u'peru', 40: u'darkgrey', 41: u'lawngreen', 42: u'chocolate', 43: u'crimson', 44: u'forestgreen', 45: u'slateblue', 46: u'lightseagreen', 47: u'cyan', 48: u'mintcream', 49: u'silver', 50: u'antiquewhite', 51: u'mediumorchid', 52: u'skyblue', 53: u'gray', 54: u'darkturquoise', 55: u'goldenrod', 56: u'darkgreen', 57:
+u'floralwhite', 58: u'darkviolet', 59: u'darkgray', 60: u'moccasin', 61: u'saddlebrown', 62: u'grey', 63: u'darkslateblue', 64: u'lightskyblue', 65: u'lightpink', 66: u'mediumvioletred', 67: u'slategrey', 68: u'red', 69: u'deeppink', 70: u'limegreen', 71: u'darkmagenta', 72: u'palegoldenrod', 73: u'plum', 74: u'turquoise', 75: u'lightgrey', 76: u'lightgoldenrodyellow', 77: u'darkgoldenrod', 78: u'lavender', 79: u'maroon', 80: u'yellowgreen', 81: u'sandybrown', 82: u'thistle', 83: u'violet', 84: u'navy', 85: u'magenta', 86: u'dimgrey', 87: u'tan', 88: u'rosybrown', 89: u'olivedrab', 90: u'blue', 91: u'lightblue', 92: u'ghostwhite', 93: u'honeydew', 94: u'cornflowerblue', 95: u'linen', 96: u'darkblue', 97: u'powderblue', 98: u'seagreen', 99: u'darkkhaki', 100: u'snow', 101: u'sienna', 102: u'mediumblue', 103: u'royalblue', 104: u'lightcyan', 105: u'green', 106: u'mediumpurple', 107: u'midnightblue', 108: u'cornsilk', 109: u'paleturquoise', 110: u'bisque', 111: u'slategray', 112:
+u'darkcyan', 113: u'khaki', 114: u'wheat', 115: u'teal', 116: u'darkorchid', 117: u'deepskyblue', 118: u'salmon', 119: u'darkred', 120: u'steelblue', 121: u'palevioletred', 122: u'lightslategray', 123: u'aliceblue', 124: u'lightslategrey', 125: u'lightgreen', 126: u'orchid', 127: u'gainsboro', 128: u'mediumseagreen', 129: u'lightgray', 130: u'mediumturquoise', 131: u'darksage', 132: u'lemonchiffon', 133: u'cadetblue', 134: u'lightyellow', 135: u'lavenderblush', 136: u'coral', 137: u'purple', 138: u'aqua', 139: u'lightsage', 140: u'whitesmoke', 141: u'mediumslateblue', 142: u'darkorange', 143: u'mediumaquamarine', 144: u'darksalmon', 145: u'beige', 146: u'blueviolet', 147: u'azure', 148: u'lightsteelblue', 149: u'oldlace'}
+'''
+
 try:
     from  matplotlib import pyplot as plt
     from  matplotlib import colors as mcolors
     from matplotlib.backends.backend_pdf import PdfPages
 
-    colors = { idx:cname for idx, cname in enumerate(mcolors.cnames) }
-    pdf = PdfPages('exfold_report.pdf')
+    #plt.rcParams['image.cmap'] = 'Accent'
+    #colors = { idx:cname for idx, cname in enumerate(mcolors.cnames) }
+    colors = { 0:'r', 1:'b', 2:'royalblue', 3:'palevioletred', 4:'chartreuse' }
+    pdf = PdfPages('exfill_report.pdf')
 except:
     print ('ERROR: matplotlib module is not loaded.')
     sys.exit(-1)
@@ -34,6 +55,31 @@ LINEWIDTH = 3
 # Folded sampling caller level event range: 630000000 - 630000015
 CALLER_EVENTS = tuple( str(event) for event in range(630000000,(630000015+1)) )
 
+papi_descs = {
+'PAPI_RES_STL' : 'Stalled res cycles',
+'PAPI_STL_ICY' : 'No instr issue',
+'PAPI_TOT_INS' : 'Instr completed',
+'PAPI_BR_TKN' : 'Cond branch taken',
+'PAPI_BR_MSP' : 'Cond br mspredictd',
+'PAPI_BR_UCN' : 'Uncond branch',
+'PAPI_BR_INS' : 'Branches',
+'PAPI_BR_CN' : 'Cond branch',
+'PAPI_TLB_DM' : 'Data TLB misses',
+'PAPI_L2_TCH' : 'L2 cache hits',
+'PAPI_L2_TCA' : 'L2 cache accesses',
+'PAPI_L2_TCM' : 'L2 cache misses',
+'PAPI_L2_LDM' : 'L2 load misses',
+'PAPI_L1_ICH' : 'L1I cache hits',
+'PAPI_L1_ICA' : 'L1I cache accesses',
+'PAPI_L1_DCA' : 'L1D cache accesses',
+'PAPI_LD_INS' : 'Loads',
+'PAPI_LST_INS' : 'L/S completed',
+'PAPI_L1_DCM' : 'L1D cache misses',
+'PAPI_L1_ICM' : 'L1I cache misses',
+'PAPI_L1_TCM' : 'L1 cache misses',
+'PAPI_L1_LDM' : 'L1 load misses',
+}
+
 cfg = OrderedDict()
 
 def parse_args():
@@ -44,6 +90,7 @@ def parse_args():
     parser.add_argument('-e', '--event', dest='event', type=str, action='append', default=None, help='Events to use (default: all events)')
     parser.add_argument('-f', '--function', dest='function', type=str, action='append', default=None, help='Functions to use (default: no function)')
     parser.add_argument('-t', '--time', dest='etime', action='store_true', default=False, help='Add elapsed time in plot (default: No)')
+    parser.add_argument('--exclude-per-ins', dest='exclude_per_ins', action='store_true', default=False, help='Exclude per_ins events (default: No)')
     #parser.add_argument('--sum', dest='accumulate', action='store_const', const=sum, default=max, help='sum the integers (default: find the max)')
 
     args = parser.parse_args()
@@ -57,7 +104,10 @@ def parse_args():
             for evt in evts.split(','):
                 events.append(evt)
         cfg['events'] = events
-  
+
+     # exclude per_ins events
+    cfg['exclude_per_ins'] = args.exclude_per_ins
+ 
     # folding dirs
     folddirs = []
     cfg['folddirs'] = folddirs
@@ -157,7 +207,9 @@ def read_data():
                 if isinstance(cfg['events'], list):
                     if row['counter'] not in cfg['events']:
                         continue
-                elif not ( isinstance(cfg['events'], bool) and cfg['events']):
+                elif not ( isinstance(cfg['events'], bool) and cfg['events'] ):
+                    continue
+                elif cfg['exclude_per_ins'] and row['counter'].endswith('per_ins'):
                     continue
 
                 # counter
@@ -222,8 +274,10 @@ def read_pcf(pcffile):
                     elif len(m) == 3:
                         funcname = m[2][1:-1]
                     
-                    if funcname in cfg['fillfuncs']:
-                        funcmap[funcnum] = funcname
+                    for fillfunc in cfg['fillfuncs']:
+                        if funcname.endswith(fillfunc) or funcname.endswith(fillfunc + '_'):
+                            funcmap[funcnum] = fillfunc
+                            break
 
             elif stage == POSTREGION:
                 break
@@ -284,7 +338,7 @@ def gen_masks():
     # - apply threashold to generate mask
 
     # constants
-    WINSIZE = 5
+    WINSIZE = 15
     winceil = int(math.ceil(WINSIZE/2))
     winfloor = int(math.floor(WINSIZE/2))
     THRESHOLD = winceil
@@ -414,7 +468,6 @@ def gen_plotpages():
     for counter, regions in cfg['csvdata'].items():
 
         fig, ax = plt.subplots(figsize=(8, 6))
-        ax2 = fig.add_axes([0.15, 0.1, 0.8, 0.7])
 
         maxval = 0
         plotdata = OrderedDict()
@@ -422,53 +475,78 @@ def gen_plotpages():
             plotdata[region] = (vals.keys(), vals.values())
             maxval = max(maxval, max(plotdata[region][1]))
 
-        ax.text(0.5, 0.95, counter, fontsize=SUBTITLE_SIZE, \
+        ax.text(0.5, 0.97, counter, fontsize=SUBTITLE_SIZE, \
             horizontalalignment='center', verticalalignment='center')
+
+        ax.text(-0.1, 0.5, papi_descs.get(counter, ''), fontsize=LABEL_SIZE, \
+            horizontalalignment='center', verticalalignment='center', rotation=90)
+
         ax.axis('off')
-        
-        H = max(0.001, maxval*1.5)
-        ax2.axis([0, 100, 0, H])
-
-        ax2.set_xlabel('% elapsed time')
-        if counter.find('per_ins') > 0:
-            ax2.set_ylabel('events / instruction')
-        else:
-            ax2.set_ylabel('# events( $\mathregular{10^{6}}$ )')
-
-        plots = []
+ 
+        funcs = []
         labels = []
+        nplots = len(plotdata) 
+
+        #axplot = fig.add_axes([0.15, 0.1, 0.8, 0.7])
+        left = 0.15
+        width = 0.8
+        hdelta = 0.7 / nplots
+
         for idx, (region, (_xvals, yvals)) in enumerate(plotdata.items()):
 
-            xvals = [x*100 for x in _xvals]
+            bottom = 0.1 + idx * hdelta
 
-            for absfolddir, regionname in cfg['regions'].items():
-                if regionname == region:
-                    for cidx, (funcname, mask) in enumerate(cfg['prvdata'][absfolddir]['funcmask'].items()):
-                        fplot = ax2.fill_between(xvals, yvals, where=mask, color=colors[cidx+5])
+            axplot = fig.add_axes([left, bottom, width, hdelta*0.8])
 
-            plot = ax2.plot(xvals, yvals, color=colors[idx], linewidth=LINEWIDTH)
+            axplot.grid(color='lightgrey', linestyle='--', linewidth=1)
+            axplot.set_axisbelow(True)
 
-            plots.append(plot[0])
-            if cfg['flags'].get('etime', False):
-                labels.append('%s (%s ms)'%(region, cfg['etimes'][cfg['folddirs'][idx]]))
+            axplot.set_title('%s (%s msec)'%(region, cfg['etimes'][cfg['folddirs'][idx]]), position=(0.5, 0.8))
+
+            H = max(0.001, maxval*1.3)
+            etime = float(cfg['etimes'][cfg['folddirs'][idx]])
+            axplot.axis([0, etime, 0, H])
+
+            if idx == 0:
+                axplot.set_xlabel('elapsed time (msec)')
+
+            if counter.find('per_ins') > 0:
+                axplot.set_ylabel('events / instruction')
             else:
-                labels.append(region)
+                axplot.set_ylabel('# events ( $\mathregular{10^{6}}$ )')
 
-        plt.legend(plots, labels)
+                xvals = [x*etime for x in _xvals]
+
+                for absfolddir, regionname in cfg['regions'].items():
+                    if regionname == region:
+                        for cidx, (funcname, mask) in enumerate(cfg['prvdata'][absfolddir]['funcmask'].items()):
+                            fplot = axplot.fill_between(xvals, yvals, where=mask, color=colors[cidx+2])
+                            if funcname not in labels:
+                                funcs.append(fplot)
+                                labels.append(funcname)
+
+                plot = axplot.plot(xvals, yvals, color=colors[idx], linewidth=LINEWIDTH)
+
+                #if cfg['flags'].get('etime', False):
+                #    labels.append('%s (%s ms)'%(region, cfg['etimes'][cfg['folddirs'][idx]]))
+                #else:
+                #    labels.append(region)
+
+        #plt.legend(funcs, labels, loc=9)
+        #plt.legend(funcs, labels, bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=3, mode="expand", borderaxespad=0.)
+        plt.legend(funcs, labels, bbox_to_anchor=(0., 1.02, 1., .204), loc=3, ncol=2, mode="expand", borderaxespad=0.)
+
         #fig.tight_layout()
 
         pdf.savefig(fig)
 
-        # dev
-        break
-
 def gen_report():
 
     # front page
-    gen_frontpage()
+    #gen_frontpage()
     
     # summary page
-    gen_summarypage()
+    #gen_summarypage()
 
     # plot description page
     #gen_plotdescpage()

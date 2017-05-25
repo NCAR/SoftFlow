@@ -2,7 +2,8 @@
 
 {% set CPUS = [ 'KNL' ] %}
 {# set CPUS = [ 'KNL', 'HSW' ] #}
-{% set CONSTRAINTS = { 'KNL': 'knl,quad,flat', 'HSW': 'haswell' } %}
+{% set CONSTRAINTS = { 'KNL': 'knl,quad,cache', 'HSW': 'haswell' } %}
+{% set INSTS = { 'KNL': '-xMIC-AVX512', 'HSW': '-xCORE-AVX2' } %}
 {% set PRERUN= { 'KNL': 'module swap craype-haswell craype-mic-knl; module load cmake; module load cray-hdf5/1.10.0; module load cray-netcdf; export CRAYPE_LINK_TYPE=dynamic', 'HSW': 'module load craype-haswell; module load cmake; module load cray-hdf5/1.10.0; module load cray-netcdf; module load extrae/3.3.0; module load papi/5.4.3.3; export CRAYPE_LINK_TYPE=dynamic' } %}
 {% set groups = [ 'control', 'experiment' ] %}
 
@@ -17,7 +18,7 @@ title = "Task for running Extrae"
     {% for group in groups  %}
 			preprocess => copy_{{group}}_{{CPU}} => config_{{group}}_{{CPU}} =>
 			clean_{{group}}_{{CPU}} => build_{{group}}_{{CPU}} => run_{{group}}_{{CPU}} =>
-			collect_{{group}}_{{CPU}} => fold_{{group}}_{{CPU}} => plot_{{group}}_{{CPU}}
+			collect_{{group}}_{{CPU}} => fold_{{group}}_{{CPU}} => plot_{{CPU}}
     {% endfor %}
 {% endfor %}
 		"""
@@ -38,7 +39,7 @@ title = "Task for running Extrae"
 
     [[config_{{group}}_{{CPU}}]]
         script = """
-            {{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make config_{{group}} CPU={{CPU}}
+            {{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make config_{{group}} CPU={{CPU}} INST={{INSTS[CPU]}}
         """
 
 	[[clean_{{group}}_{{CPU}}]]
@@ -65,13 +66,13 @@ title = "Task for running Extrae"
 		script = """
 			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make fold_{{group}} CPU={{CPU}}
 		"""
+    {% endfor %}
 
-	[[plot_{{group}}_{{CPU}}]]
+	[[plot_{{CPU}}]]
 		script = """
-			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make plot_{{group}} CPU={{CPU}}
+			{{PRERUN[CPU]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make plot CPU={{CPU}}
 		"""
 
-    {% endfor %}
 {% endfor %}
 
 [visualization]
