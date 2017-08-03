@@ -1,0 +1,8 @@
+svdtest
+*.mod
+*.o
+TRACE.*
+set-*
+*.prv
+*.pcf
+*.row

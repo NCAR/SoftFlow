@@ -2,22 +2,25 @@
 
 #PBS -N exhomme
 #PBS -A STDD0001
-#PBS -l walltime=00:30:00
+#PBS -l walltime=01:00:00
 #PBS -q regular
 #PBS -j oe
 #PBS -m abe
 ##PBS -M youngsun@ucar.edu
-#PBS -l select=3:ncpus=36:mpiprocs=36
+#PBS -l select=11:ncpus=36:mpiprocs=36
 
-# TODO: 96 cores, 3nodes, ne 8
+# TODO: 384 cores, 11nodes, ne 8
 
-export EXTRAE_HOME=/glade/p/tdd/asap/contrib/extrae/3.3.0
-#export EXTRAE_HOME=/glade/p/tdd/asap/contrib/extrae/3.4.3
+export OMP_NUM_THREADS=1
+export OMP_STACKSIZE=128M
+ulimit -s unlimited
+
+export EXTRAE_HOME=/glade/p/tdd/asap/contrib/cheyenne_packages/extrae/3.5.1
 export EXTRAE_CONFIG_FILE=extrae.xml
 
-export LD_LIBRARY_PATH=${EXTRAE_HOME}/lib:/glade/apps/opt/papi/5.4.3/intel/15.0.3/lib:/glade/apps/opt/libxml2/2.9.0/gnu/4.7.2/lib:/glade/p/tdd/asap/contrib/libunwind/1.1/gnu/lib:${LD_LIBRARY_PATH}
+export LD_LIBRARY_PATH=${EXTRAE_HOME}/lib:/glade/p/tdd/asap/contrib/cheyenne_packages/papi_2017/5.5.1/lib:/glade/apps/opt/libxml2/2.9.0/gnu/4.7.2/lib:/glade/p/tdd/asap/contrib/cheyenne_packages/libunwind/1.2/lib:${LD_LIBRARY_PATH}
 
 ulimit -s unlimited
 
 ## Run the desired program
-mpiexec_mpt omplace EXECUTABLE < NAMELIST
+mpirun -n 384  EXECUTABLE < NAMELIST

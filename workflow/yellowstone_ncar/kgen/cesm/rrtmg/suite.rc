@@ -1,0 +1,40 @@
+#!jinja2
+
+title = "Task for generating MG2 kernel using KGen"
+
+[cylc]
+
+[scheduling]
+    [[dependencies]]
+        graph = """
+			preprocess => copy => createcase => configcase => run
+		"""
+#export TASKROOTDIR=`python -c "import os; print os.path.commonprefix(['$CYLC_TASK_LOG_ROOT', '$CYLC_TASK_WORK_DIR'])"`
+
+[runtime]
+    [[preprocess]]
+        script = """
+        """
+
+    [[copy]]
+        script = """
+            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make copy
+        """
+
+    [[createcase]]
+        script = """
+            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make createcase
+        """
+
+    [[configcase]]
+        script = """
+            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make configcase
+        """
+
+    [[run]]
+        script = """
+			make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make run
+        """
+
+[visualization]
+

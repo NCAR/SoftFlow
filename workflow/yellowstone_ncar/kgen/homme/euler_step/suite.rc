@@ -1,0 +1,53 @@
+#!jinja2
+
+{% set PRERUN = 'true'  %}
+
+
+title = "Task for running Extrae"
+
+[cylc]
+
+[scheduling]
+	[[dependencies]]
+		graph = """
+			preprocess => copy => config => clean => build => run => collect
+		"""
+
+[runtime]
+    [[preprocess]]
+        script = """
+			export TASKROOTDIR=`python -c "import os; print os.path.commonprefix([$CYLC_TASK_LOG_ROOT, $CYLC_TASK_WORK_DIR])"`
+            make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make preprocess TASKROOTDIR=$TASKROOTDIR
+        """
+
+    [[copy]]
+        script = """
+            {{PRERUN}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make copy
+        """
+
+    [[config]]
+        script = """
+            {{PRERUN}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make config
+        """
+
+	[[clean]]
+		script = """
+			{{PRERUN}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make clean
+		"""
+
+	[[build]]
+		script = """
+			{{PRERUN}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make build
+		"""
+
+	[[run]]
+		script = """
+			{{PRERUN}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make run
+		"""
+
+	[[collect]]
+		script = """
+			{{PRERUN}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make collect
+		"""
+
+[visualization]

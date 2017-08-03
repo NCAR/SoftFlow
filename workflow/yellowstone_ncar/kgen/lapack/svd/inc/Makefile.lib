@@ -1,0 +1,19 @@
+
+FC := ifort
+FCFLAGS :=
+LAPACKLIB := /glade/u/home/youngsun/repos/github/lapack-release/liblapack.a
+
+run:
+	./svdtest
+
+build: main.o driver.o
+	${FC} ${FCFLAGS} -o svdtest main.f90 driver.f90 ${LAPACKLIB}
+
+main.o : main.f90 driver.o
+	$(FC) -c ${FCFLAGS} $< -o $@
+
+driver.o : driver.f90
+	$(FC) -c ${FCFLAGS} $< -o $@
+
+clean:
+	rm -f svdtest *.o *.mod

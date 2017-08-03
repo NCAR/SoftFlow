@@ -39,10 +39,11 @@ try:
 
     #plt.rcParams['image.cmap'] = 'Accent'
     #colors = { idx:cname for idx, cname in enumerate(mcolors.cnames) }
-    colors = { 0:'r', 1:'b', 2:'royalblue', 3:'palevioletred', 4:'chartreuse' }
+    #colors = { 0:'r', 1:'b', 2:'royalblue', 3:'palevioletred', 4:'chartreuse' }
+    colors = { 0:'r', 1:'b', 2:'lightgrey', 3:'grey', 4:'darkgrey' }
     pdf = PdfPages('exfill_report.pdf')
-except:
-    print ('ERROR: matplotlib module is not loaded.')
+except Exception as e:
+    print ('ERROR: matplotlib module is not loaded: %s'%str(e))
     sys.exit(-1)
 
 FIELDNAMES = [ 'region', 'group', 'counter', 'xval', 'yval' ]
@@ -53,32 +54,50 @@ LABEL_SIZE = 18
 LINEWIDTH = 3
 
 # Folded sampling caller level event range: 630000000 - 630000015
-CALLER_EVENTS = tuple( str(event) for event in range(630000000,(630000015+1)) )
+#CALLER_EVENTS = tuple( str(event) for event in range(630000000,(630000015+1)) )
+CALLER_EVENTS = tuple( str(event) for event in range(630000000,(630000005+1)) )
+#CALLER_EVENTS = tuple( '630000005' )
 
 papi_descs = {
-'PAPI_RES_STL' : 'Stalled res cycles',
-'PAPI_STL_ICY' : 'No instr issue',
-'PAPI_TOT_INS' : 'Instr completed',
-'PAPI_BR_TKN' : 'Cond branch taken',
-'PAPI_BR_MSP' : 'Cond br mspredictd',
-'PAPI_BR_UCN' : 'Uncond branch',
+'PAPI_RES_STL' : 'Stalled resource cycles',
+'PAPI_STL_ICY' : 'No instrurction issue',
+'PAPI_TOT_INS' : 'Instructions completed',
+'PAPI_BR_TKN' : 'Conditional branch taken',
+'PAPI_BR_MSP' : 'Conditional branch mispredicted',
+'PAPI_BR_UCN' : 'Unconditional branch',
 'PAPI_BR_INS' : 'Branches',
-'PAPI_BR_CN' : 'Cond branch',
+'PAPI_BR_CN' : 'Conditional branch',
 'PAPI_TLB_DM' : 'Data TLB misses',
+'PAPI_VEC_DP' : 'Double precision vector instructions',
+'PAPI_L3_DCR' : 'L3 data cache reads',
+'PAPI_L3_DCW' : 'L3 data cache writes',
 'PAPI_L2_TCH' : 'L2 cache hits',
+'PAPI_L2_DCR' : 'L2 data cache reads',
+'PAPI_L2_DCW' : 'L2 data cache writes',
 'PAPI_L2_TCA' : 'L2 cache accesses',
 'PAPI_L2_TCM' : 'L2 cache misses',
 'PAPI_L2_LDM' : 'L2 load misses',
-'PAPI_L1_ICH' : 'L1I cache hits',
-'PAPI_L1_ICA' : 'L1I cache accesses',
-'PAPI_L1_DCA' : 'L1D cache accesses',
+'PAPI_L1_ICH' : 'L1 instruction cache hits',
+'PAPI_L1_ICA' : 'L1 instruction cache accesses',
+'PAPI_L1_DCA' : 'L1 data cache accesses',
 'PAPI_LD_INS' : 'Loads',
-'PAPI_LST_INS' : 'L/S completed',
-'PAPI_L1_DCM' : 'L1D cache misses',
-'PAPI_L1_ICM' : 'L1I cache misses',
+'PAPI_LST_INS' : 'Loads and stores completed',
+'PAPI_L1_DCM' : 'L1 data cache misses',
+'PAPI_L1_ICM' : 'L1 instruction cache misses',
 'PAPI_L1_TCM' : 'L1 cache misses',
 'PAPI_L1_LDM' : 'L1 load misses',
+'PAPI_L1_STM' : 'L1 store misses',
+'OFFCORE_RESPONSE0:MCDRAM_NEAR' : 'Responses from MCDRAM near',
+'OFFCORE_RESPONSE0:MCDRAM_FAR' : 'Responses from MCDRAM far or other L2 cache',
+'UOPS_RETIRED:PACKED_SIMD' : 'All vector instructions'
 }
+
+funcnamemap = { 'compute_and_apply_rhs': 'compute_and_apply_rhs', 
+    'euler_step': 'dynamics and tracers',
+    'advance_hypervis_dp': 'dissipation'
+}
+
+hatchs = [ '\\\\', '-', '//' ]
 
 cfg = OrderedDict()
 
@@ -244,9 +263,9 @@ def read_data():
                     else:
                         region[ xval ] = yval
                 elif absfolddir not in cfg['appnames']:
+                    import pdb; pdb.set_trace()
                     raise Exception('Dupulicated values: %s from %s.'%(str(row), csvfile))
 
-    #import pdb; pdb.set_trace()
 
 def read_pcf(pcffile):
 
@@ -475,16 +494,15 @@ def gen_plotpages():
             plotdata[region] = (vals.keys(), vals.values())
             maxval = max(maxval, max(plotdata[region][1]))
 
-        ax.text(0.5, 0.97, counter, fontsize=SUBTITLE_SIZE, \
+        ax.text(0.5, 0.97, papi_descs.get(counter, ''), fontsize=SUBTITLE_SIZE, \
             horizontalalignment='center', verticalalignment='center')
 
-        ax.text(-0.1, 0.5, papi_descs.get(counter, ''), fontsize=LABEL_SIZE, \
-            horizontalalignment='center', verticalalignment='center', rotation=90)
+        #ax.text(-0.1, 0.5, papi_descs.get(counter, ''), fontsize=LABEL_SIZE, \
+        #    horizontalalignment='center', verticalalignment='center', rotation=90)
 
         ax.axis('off')
  
-        funcs = []
-        labels = []
+        func_labels = {}
         nplots = len(plotdata) 
 
         #axplot = fig.add_axes([0.15, 0.1, 0.8, 0.7])
@@ -520,12 +538,12 @@ def gen_plotpages():
                 for absfolddir, regionname in cfg['regions'].items():
                     if regionname == region:
                         for cidx, (funcname, mask) in enumerate(cfg['prvdata'][absfolddir]['funcmask'].items()):
-                            fplot = axplot.fill_between(xvals, yvals, where=mask, color=colors[cidx+2])
-                            if funcname not in labels:
-                                funcs.append(fplot)
-                                labels.append(funcname)
+                            fplot = axplot.fill_between(xvals, yvals, where=mask, color=colors[cidx+2], hatch=hatchs[cidx])
+                            if funcnamemap[funcname] not in func_labels:
+                                func_labels[funcnamemap[funcname]] = fplot
 
-                plot = axplot.plot(xvals, yvals, color=colors[idx], linewidth=LINEWIDTH)
+                #plot = axplot.plot(xvals, yvals, color=colors[idx], linewidth=LINEWIDTH)
+                plot = axplot.plot(xvals, yvals, color='darkslategrey', linewidth=LINEWIDTH)
 
                 #if cfg['flags'].get('etime', False):
                 #    labels.append('%s (%s ms)'%(region, cfg['etimes'][cfg['folddirs'][idx]]))
@@ -534,11 +552,18 @@ def gen_plotpages():
 
         #plt.legend(funcs, labels, loc=9)
         #plt.legend(funcs, labels, bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=3, mode="expand", borderaxespad=0.)
-        plt.legend(funcs, labels, bbox_to_anchor=(0., 1.02, 1., .204), loc=3, ncol=2, mode="expand", borderaxespad=0.)
+        funcs = []
+        labels = []
+        for l in sorted(func_labels.keys()):
+            labels.append(l)
+            funcs.append(func_labels[l])
+        plt.legend(funcs, labels, bbox_to_anchor=(0., 1.02, 1., .204), loc=3, ncol=3, mode="expand", borderaxespad=0.)
 
         #fig.tight_layout()
 
         pdf.savefig(fig)
+
+        plt.close()
 
 def gen_report():
 

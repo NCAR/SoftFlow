@@ -1,10 +1,10 @@
 #!jinja2
 
-{% set tests = [ 'perfTest', 'perfTestWACCM' ] %}
+{# set tests = [ 'perfTest', 'perfTestWACCM' ] #}
+{% set tests = [ 'perfTestWACCM' ] %}
 {% set groups = [ 'control', 'experiment' ] %}
-{% set PRERUN = { 'control': 'module load netcdf; module load pnetcdf; module load impi/5.1.3.210',
-	'experiment': 'module load netcdf; module load pnetcdf; module load impi/5.1.3.210' }  %}
-
+{# set PRERUN = { 'control': 'module load netcdf pnetcdf impi/5.1.3.210', 'experiment': 'module load netcdf pnetcdf impi/5.1.3.210' }  #}
+{% set PRERUN = { 'control': 'module load netcdf pnetcdf', 'experiment': 'module load netcdf pnetcdf' }  %}
 
 title = "Task for running Extrae"
 
@@ -16,7 +16,7 @@ title = "Task for running Extrae"
     {% for test in tests  %}
 		{% for group in groups  %}
 			preprocess => copy_{{test}}_{{group}} => config_{{test}}_{{group}} => clean_{{test}}_{{group}} => build_{{test}}_{{group}}
-			build_{{test}}_{{group}} => run_{{test}}_{{group}} => collect_{{test}}_{{group}}
+			build_{{test}}_{{group}} => run_{{test}}_{{group}} => collect_{{test}}_{{group}} => fold_{{test}}_{{group}} => plot
 		{% endfor %}
     {% endfor %}
 		"""
@@ -60,7 +60,18 @@ title = "Task for running Extrae"
 			{{PRERUN[group]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make collect_{{group}} TEST={{test}}
 		"""
 
+	[[fold_{{test}}_{{group}}]]
+		script = """
+			{{PRERUN[group]}}; make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make fold_{{group}} TEST={{test}}
+		"""
+
+	[[plot]]
+		script = """
+			make -f $CYLC_SUITE_DEF_PATH/bin/cmds.make plot TEST={{test}}
+		"""
+
 		{% endfor %}
+
     {% endfor %}
 
 [visualization]
