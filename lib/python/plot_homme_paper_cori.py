@@ -26,14 +26,14 @@ except Exception as e:
 
 FIELDNAMES = [ 'region', 'group', 'counter', 'xval', 'yval' ]
 TITLE_SIZE = 18
-SUBTITLE_SIZE = 14
+SUBTITLE_SIZE = 12
 TEXT_SIZE = 12
 LABEL_SIZE = 10
 LINEWIDTH = 1
 
 # Folded sampling caller level event range: 630000000 - 630000015
-#CALLER_EVENTS = tuple( str(event) for event in range(630000000,(630000015+1)) )
-CALLER_EVENTS = tuple( str(event) for event in range(630000000,(630000005+1)) )
+CALLER_EVENTS = tuple( str(event) for event in range(630000000,(630000015+1)) ) # Cori
+#CALLER_EVENTS = tuple( str(event) for event in range(630000000,(630000005+1)) ) # For Cheyenne
 #CALLER_EVENTS = tuple( '630000005' )
 
 papi_descs = {
@@ -65,8 +65,8 @@ papi_descs = {
 'PAPI_L1_TCM' : 'L1 cache misses',
 'PAPI_L1_LDM' : 'L1 load misses',
 'PAPI_L1_STM' : 'L1 store misses',
-'OFFCORE_RESPONSE0:MCDRAM_NEAR' : 'Responses from MCDRAM near',
-'OFFCORE_RESPONSE0:MCDRAM_FAR' : 'Responses from MCDRAM far or other L2 cache',
+'OFFCORE_RESPONSE_0:MCDRAM_NEAR' : 'MCDRAM near',
+'OFFCORE_RESPONSE_0:MCDRAM_FAR' : 'MCDRAM far/other L2 cache',
 'UOPS_RETIRED:PACKED_SIMD' : 'All vector instructions'
 }
 
@@ -75,7 +75,7 @@ funcnamemap = { 'compute_and_apply_rhs': 'compute_and_apply_rhs',
     'advance_hypervis_dp': 'dissipation'
 }
 
-hatchs = [ '\\\\', '-', '//' ]
+hatchs = [ '\\\\', '++', '//' ]
 
 cfg = OrderedDict()
 
@@ -334,6 +334,32 @@ def gen_masks():
     # - apply filter(integration)
     # - apply threashold to generate mask
 
+#    # constants
+#    WINSIZE = 15
+#    winceil = int(math.ceil(WINSIZE/2))
+#    winfloor = int(math.floor(WINSIZE/2))
+#    THRESHOLD = winceil
+#
+#    # read data
+#    prvdata = {}
+#    cfg['prvdata'] = prvdata
+#    for absfolddir, (pcffile, prvfile) in cfg['prvfiles'].items():
+#        prvdata[absfolddir] = { 'funcmap': None, 'funclist': None, 'funcmask': {} }
+#        prvdata[absfolddir]['funcmap'] = read_pcf(pcffile)
+#        prvdata[absfolddir]['funclist'] = read_prv(prvfile, prvdata[absfolddir]['funcmap'].keys(), 999)
+#
+#        funcmask = {}
+#        prvdata[absfolddir]['funcmask'] = funcmask
+#        for funcid, funcname in prvdata[absfolddir]['funcmap'].items():
+#            funcmask[funcname] = []
+#            l = prvdata[absfolddir]['funclist'][funcid]
+#            size = len(l)
+#            for idx in range(size):
+#                value = sum(l[ max(idx-winfloor, 0) : min(idx+winfloor, size)])  
+#                funcmask[funcname].append(True if value >= THRESHOLD else False)
+#
+#    #import pdb; pdb.set_trace()
+
     # constants
     WINSIZE = 15
     winceil = int(math.ceil(WINSIZE/2))
@@ -355,10 +381,40 @@ def gen_masks():
             l = prvdata[absfolddir]['funclist'][funcid]
             size = len(l)
             for idx in range(size):
-                value = sum(l[ max(idx-winfloor, 0) : min(idx+winfloor, size)])  
+                value = sum(l[ max(idx-winfloor, 0) : min(idx+winfloor, size)])
                 funcmask[funcname].append(True if value >= THRESHOLD else False)
 
-    #import pdb; pdb.set_trace()
+
+    # averaging range of functions
+    for absfolddir, funcinfo in prvdata.items():
+        new_funcmask = {}
+        for funcname_pivot, mask_pivot in funcinfo['funcmask'].items():
+            begin_org = mask_pivot.index(True)
+            end_org = len(mask_pivot) - 1 - mask_pivot[::-1].index(True)
+            begin = begin_org
+            end = end_org
+            for funcname, mask in funcinfo['funcmask'].items():
+                if funcname != funcname_pivot:
+                    new_mask = []
+                    for val_pivot, val in zip(mask_pivot, mask):
+                        new_mask.append( val_pivot and val )
+                    try:
+                        begin_mask = new_mask.index(True)
+                        end_mask = len(new_mask) - 1 - new_mask[::-1].index(True)
+                        mid_mask = int( (begin_mask + end_mask) / 2.0 )
+                        if begin_org == begin_mask:
+                            begin = mid_mask
+                        elif end_org == end_mask:
+                            end = mid_mask
+                        else:
+                            pass
+                            #import pdb; pdb.set_trace()
+                        #break
+                    except:
+                        pass
+            new_funcmask[funcname_pivot] = [ False ] * begin + [ True ] * (end - begin) + [ False ] * (len(mask) - end)
+        funcinfo['funcmask'] = new_funcmask
+
 
 def gen_plotpages():
 
@@ -371,8 +427,8 @@ def gen_plotpages():
     # BDW
     #selected_counters = ( ( 'PAPI_L1_LDM', 'PAPI_L1_STM' ), ( 'PAPI_L2_DCR', 'PAPI_L2_DCW' ), ( 'PAPI_L3_DCR', 'PAPI_L3_DCW' ) )
 
-    fig = plt.figure(figsize=(12, 6))
-    fig.suptitle('HOMME Cache Behavior (perfTestWACCM, ne=8) on Cori', fontsize=TITLE_SIZE, fontweight='bold', y=1.0)
+    fig = plt.figure(figsize=(12, 7))
+    #fig.suptitle('HOMME Cache Behavior (perfTestWACCM, ne=8) on Cori', fontsize=TITLE_SIZE, fontweight='bold', y=1.0)
 
     outer = gridspec.GridSpec(NROW, NCOL, wspace=0.2, hspace=0.3)
 
@@ -382,6 +438,9 @@ def gen_plotpages():
     fl = {}
 
     for row in range(NROW):
+
+        plt.figtext( 0.075, 0.75 - row*0.4, '# events ($\mathregular{10^{6}}$)', fontsize=LABEL_SIZE, rotation='vertical' )
+
         for col in range(NCOL):
 
             inner = gridspec.GridSpecFromSubplotSpec(2, 1, subplot_spec=outer[row, col], wspace=0.1, hspace=0.3)
@@ -410,28 +469,28 @@ def gen_plotpages():
                     if row == 1:
                         ax.set_xlabel('elapsed time (msec)', fontsize=LABEL_SIZE)
 
-                H = max(0.001, maxval*1.3)
-                etime = float(cfg['etimes'][cfg['folddirs'][idx]])
-                ax.axis([0, etime, 0, H])
 
-                t = ax.text(etime*0.5, H*0.85, '%s (%s msec)'%(region, cfg['etimes'][cfg['folddirs'][idx]]), ha='center')
 
-                if col == 0:
-                    ax.set_ylabel('# events ($\mathregular{10^{6}}$)', fontsize=LABEL_SIZE)
+                #if col == 0:
+                #    ax.set_ylabel('# events ($\mathregular{10^{6}}$)', fontsize=LABEL_SIZE)
 
-                #t.set_va('top')
-                #t.set_ha('center')
 
-                xvals = [x*etime for x in _xvals]
+                xvals = []
 
                 for absfolddir, regionname in cfg['regions'].items():
                     if regionname == region:
-                        for coloridx, (funcname, mask) in enumerate(cfg['prvdata'][absfolddir]['funcmask'].items()):
-                            fplot = ax.fill_between(xvals, yvals, where=mask, color=colors[coloridx+2], hatch=hatchs[coloridx])
-                            if funcnamemap[funcname] not in fl:
-                                fl[funcnamemap[funcname]] = fplot
+                        H = max(0.001, maxval*1.3)
+                        etime = float(cfg['etimes'][absfolddir])
+                        ax.axis([0, etime, 0, H])
+                        xvals = [x*etime for x in _xvals]
+                        t = ax.text(etime*0.5, H*0.85, '%s (%s msec)'%(region, cfg['etimes'][absfolddir]), ha='center')
+                        break
 
-                #plot = axplot.plot(xvals, yvals, color=colors[idx], linewidth=LINEWIDTH)
+                for coloridx, (funcname, mask) in enumerate(cfg['prvdata'][absfolddir]['funcmask'].items()):
+                    fplot = ax.fill_between(xvals, yvals, where=mask, color=colors[coloridx+2], hatch=hatchs[coloridx])
+                    if funcnamemap[funcname] not in fl:
+                        fl[funcnamemap[funcname]] = fplot
+
                 plot = ax.plot(xvals, yvals, color='darkslategrey', linewidth=LINEWIDTH)
 
                 #if region == 'original':
@@ -447,10 +506,12 @@ def gen_plotpages():
         labels.append(label)
         funcs.append(fl[label])
 
-    fig.legend(funcs, labels, loc='upper center', ncol=3, borderaxespad=1.0, frameon=False)
+    fig.legend(funcs, labels, loc='lower center', ncol=3, borderaxespad=-0.5, frameon=False, fontsize=SUBTITLE_SIZE)
 
     #fig.show()
-    pdf.savefig(fig)
+
+    plt.savefig('exfill_report_Cori.png', bbox_inches='tight', format='png', dpi=600)
+    pdf.savefig(fig, bbox_inches='tight')
     pdf.close()
 
 

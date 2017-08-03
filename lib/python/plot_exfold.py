@@ -12,6 +12,7 @@ from argparse import ArgumentParser
 from collections import OrderedDict
 from csv import DictReader
 from datetime import datetime
+import dateutil
 
 try:
     from  matplotlib import pyplot as plt
@@ -20,8 +21,8 @@ try:
 
     colors = { idx:cname for idx, cname in enumerate(mcolors.cnames) }
     pdf = PdfPages('exfold_report.pdf')
-except:
-    print ('ERROR: matplotlib module is not loaded.')
+except Exception as e:
+    print ('ERROR: matplotlib module is not loaded: %s'%str(e))
     sys.exit(-1)
 
 FIELDNAMES = [ 'region', 'group', 'counter', 'xval', 'yval' ]

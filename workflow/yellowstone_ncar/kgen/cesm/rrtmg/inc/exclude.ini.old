@@ -1,0 +1,25 @@
+[namepath]
+:perf_mod = skip_module
+:t_startf =
+:t_stampf =
+:t_stopf =
+:pio = skip_module
+:ifcore = skip_module
+:cam_history_support = skip_module
+:cam_logfile = skip_module
+:cam_abortutils = skip_module
+:tracebackqq =
+:var_desc_t =
+:endrun =
+:abort =
+:mpi_error_string =
+:mpi_initialized =
+:mpi_abort =
+:print =
+:gptlstart =
+:gptlstart_handle =
+:gptlstop =
+:gptlstop_handle =
+:addfld =
+:outfld =
+

@@ -1,7 +1,9 @@
 #!jinja2
 
-{% set TESTS = [ 'RRTMG', 'RRTMGP' ] %}
-{% set WAVES = [ 'SW', 'LW' ] %}
+{# set TESTS = [ 'RRTMG', 'RRTMGP' ] #}
+{% set TESTS = [ 'RRTMG' ] %}
+{# set WAVES = [ 'SW', 'LW' ] #}
+{% set WAVES = [ 'LW' ] %}
 
 {# set TESTS = [ 'RRTMGP' ] #}
 {# set WAVES = [ 'SW' ] #}

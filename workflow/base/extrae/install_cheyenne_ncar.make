@@ -5,20 +5,16 @@
 ###########
 
 
-INSTALLDIR := /glade/p/tdd/asap/contrib
+INSTALLDIR := /glade/p/tdd/asap/contrib/cheyenne_packages
 
 TMPDIR := /glade/scratch/${USER}
-EXTRAETMPDIR := ${TMPDIR}/extraeinstall
+EXTRAETMPDIR := ${TMPDIR}/extraeinstall_cheyenne
 
 # Folding
 # https://ftp.tools.bsc.es/folding/folding-1.3.1-src.tar.bz2
-FOLDING_VERSION := 1.3.1
+#FOLDING_VERSION := 1.3.1
+FOLDING_VERSION := 1.0.2
 FOLDING_INSTALLDIR := ${INSTALLDIR}/folding/${FOLDING_VERSION}
-
-# Extrae
-# https://ftp.tools.bsc.es/extrae/extrae-3.4.3-src.tar.bz2
-EXTRAE_VERSION := 3.4.3
-EXTRAE_INSTALLDIR := ${INSTALLDIR}/extrae/${EXTRAE_VERSION}
 
 # libunwind
 # http://download.savannah.gnu.org/releases/libunwind/libunwind-1.2.tar.gz
@@ -52,6 +48,13 @@ LIBERTY_INSTALLDIR := ${INSTALLDIR}/binutils/${BUTILS_VERSION}
 PAPI_VERSION := 5.5.1
 PAPI_INSTALLDIR := ${INSTALLDIR}/papi_2017/${PAPI_VERSION}
 
+# Extrae
+# https://ftp.tools.bsc.es/extrae/extrae-3.4.3-src.tar.bz2
+# 3.4.3
+EXTRAE_VERSION := 3.5.1
+EXTRAE_INSTALLDIR := ${INSTALLDIR}/extrae/${EXTRAE_VERSION}
+PRESET_EXTRAE := export LD_LIBRARY_PATH=${PAPI_INSTALLDIR}/lib:${LD_LIBRARY_PATH}
+
 ##################
 # Check software
 ##################
@@ -64,8 +67,11 @@ check-papi:
 
 install-papi:
 	# NOT WORKING YET
-	cd ${EXTRAETMPDIR}/papi-${PAPI_VERSION}/src; ./configure --prefix=${PAPI_INSTALLDIR} CC=icc CPP=cpp F77=ifort
-	cd ${EXTRAETMPDIR}/papi-${PAPI_VERSION}/src; make install
+	cd ${EXTRAETMPDIR}/papi-${PAPI_VERSION}/src; ./configure --prefix=${PAPI_INSTALLDIR} \
+		CC=gcc F77=gfortran --without-ffsll \
+	cd ${EXTRAETMPDIR}/papi-${PAPI_VERSION}/src; make; make install
+
+	# --without-ffsll
 
 #install-zlib:
 #	cd ${EXTRAETMPDIR}/zlib-${ZLIB_VERSION}; ./configure --prefix=${ZLIB_INSTALLDIR}
@@ -95,15 +101,21 @@ install-unwind:
 	cd ${EXTRAETMPDIR}/libunwind-${UNWIND_VERSION}; make clean; make -j 8 install
 
 install-extrae:
-	cd ${EXTRAETMPDIR}/extrae-${EXTRAE_VERSION}; ./configure --prefix=${EXTRAE_INSTALLDIR} --enable-sampling \
-		CC=gcc CXX=g++ FC=gfortran \
-		--with-mpi=/opt/sgi/mpt/mpt-2.15 --with-unwind=${UNWIND_INSTALLDIR} \
+	cd ${EXTRAETMPDIR}/extrae-${EXTRAE_VERSION}; ${PRESET_EXTRAE}; \
+	./configure --prefix=${EXTRAE_INSTALLDIR} --enable-sampling \
+		CC=mpiicc CXX=mpiicpc FC=mpiifort --enable-openmp-intel \
+		--with-mpi=/glade/u/apps/opt/intel/2016u3/impi/5.1.3.210/intel64 --with-unwind=${UNWIND_INSTALLDIR} \
 		--with-libz=/usr --with-binutils=/usr --with-xml-prefix=/usr \
-		--with-papi=/glade/u/apps/ch/opt/papi/5.5.1/intel/16.0.3 \
+		--with-papi=${PAPI_INSTALLDIR} \
 		--without-dyninst
-	cd ${EXTRAETMPDIR}/extrae-${EXTRAE_VERSION}; make clean; make -j 8 install
+	cd ${EXTRAETMPDIR}/extrae-${EXTRAE_VERSION}; ${PRESET_EXTRAE}; make clean; make -j 4; make install
 
 		#--with-mpi=/opt/sgi/mpt/mpt-2.15 --with-unwind=${UNWIND_INSTALLDIR} \
+		#CC=gcc CXX=g++ FC=gfortran \
+		#CC=mpiicc CXX=mpiicpc FC=mpiifort --enable-openmp-intel \
+		#--with-papi=/glade/u/apps/ch/opt/papi/5.5.1/intel/16.0.3_with_ffsll \
+		#--with-mpi=/opt/sgi/mpt/mpt-2.15 --with-unwind=${UNWIND_INSTALLDIR} \
+		# /glade/u/apps/opt/intel/2016u3/impi/5.1.3.210/intel64
 
 install-folding:
 	cd ${EXTRAETMPDIR}/folding-${FOLDING_VERSION}-intelx86-64; \

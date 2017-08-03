@@ -1,0 +1,455 @@
+!KGEN-generated Fortran source file 
+  
+!Generated at : 2017-03-09 20:17:32 
+!KGEN version : 0.7.2 
+  
+module radiation
+
+!---------------------------------------------------------------------------------
+!
+! CAM interface to RRTMGP radiation parameterization.
+!
+!---------------------------------------------------------------------------------
+
+    USE shr_kind_mod, ONLY: r8=>shr_kind_r8 
+
+
+    USE mo_gas_optics_specification, ONLY: ty_gas_optics_specification 
+
+
+    USE kgen_utils_mod, ONLY: kgen_dp, kgen_array_sumcheck 
+    USE tprof_mod, ONLY: tstart, tstop, tnull, tprnt 
+    USE mo_gas_optics_specification, ONLY: kr_mo_gas_optics_specification_ty_gas_optics_specification 
+    USE kgen_utils_mod, ONLY: check_t, kgen_init_check, CHECK_IDENTICAL, CHECK_IN_TOL, CHECK_OUT_TOL 
+    USE mo_gas_optics_specification, ONLY: kv_mo_gas_optics_specification_ty_gas_optics_specification 
+    IMPLICIT NONE 
+    PRIVATE 
+    SAVE 
+
+    PUBLIC radiation_tend 
+
+
+! Control variables set via namelist
+
+                           ! or hours (negative).
+                           ! or hours (negative).
+
+                           ! or hours (negative) SW/LW radiation will be
+                           ! run continuously from the start of an
+                           ! initial or restart run
+
+
+! Physics buffer indices
+
+
+! averaging time interval for zenith angle
+
+! Number of layers in radiation calculations.
+
+! Indices for copying data between cam and rrtmgp arrays
+! Assume the rrtmgp vertical index goes bottom to top of atm
+
+! LW coefficients
+type(ty_gas_optics_specification) :: kdist_lw
+
+! SW coefficients
+
+!===============================================================================
+PUBLIC kr_externs_in_radiation 
+PUBLIC kr_externs_out_radiation 
+PUBLIC kr_mo_gas_optics_specification_ty_gas_optics_specification 
+PUBLIC kv_mo_gas_optics_specification_ty_gas_optics_specification 
+contains
+!===============================================================================
+
+
+!================================================================================================
+
+
+!================================================================================================
+
+
+!================================================================================================
+
+
+!================================================================================================
+
+
+!===============================================================================
+
+
+  
+!===============================================================================
+
+
+  
+!===============================================================================
+
+
+  
+!===============================================================================
+
+SUBROUTINE radiation_tend(kgen_unit, kgen_elapsed_time, kgen_isverified) 
+
+   !----------------------------------------------------------------------- 
+   ! 
+   ! Driver for radiation computation.
+   ! 
+   !-----------------------------------------------------------------------
+    
+
+
+    USE mo_gas_concentrations, ONLY: ty_gas_concs 
+
+
+    USE mo_optical_props, ONLY: ty_optical_props 
+
+    USE mo_fluxes_byband, ONLY: ty_fluxes_byband 
+
+   !use mo_rrtmgp_lw,       only: rrtmgp_lw # KGEN
+    USE mo_rrtmgp_lw, ONLY: rrtmgp_lw => rrtmgp_lw_opt 
+   !use mo_rrtmgp_sw,       only: rrtmgp_sw # KGEN
+
+
+   ! Arguments
+    USE kgen_utils_mod, ONLY: kgen_dp, kgen_array_sumcheck 
+    USE mo_gas_concentrations, ONLY: kr_mo_gas_concentrations_ty_gas_concs 
+    USE mo_optical_props, ONLY: kr_mo_optical_props_ty_optical_props 
+    USE mo_fluxes_byband, ONLY: kr_mo_fluxes_byband_ty_fluxes_byband 
+    USE mo_rrtmgp_lw, ONLY: kr_externs_out_mo_rrtmgp_lw 
+    USE mo_lw_solver, ONLY: kr_externs_out_mo_lw_solver 
+    USE mo_gas_concentrations, ONLY: kv_mo_gas_concentrations_ty_gas_concs 
+    USE mo_optical_props, ONLY: kv_mo_optical_props_ty_optical_props 
+    USE mo_fluxes_byband, ONLY: kv_mo_fluxes_byband_ty_fluxes_byband 
+    USE kgen_utils_mod, ONLY: check_t, kgen_init_check, CHECK_IDENTICAL, CHECK_IN_TOL, CHECK_OUT_TOL 
+    USE kgen_utils_mod, ONLY: kgen_perturb_real 
+    
+
+
+   ! Local variables
+                                   ! if the argument is not present
+  
+
+
+   ! Gathered indices of day and night columns 
+   !  chunk_column_index = IdxDay(daylight_column_index)
+
+
+   ! tropopause diagnostic
+
+   ! state data passed to radiation calc
+    REAL(KIND=r8), allocatable :: t_sfc(:) 
+    REAL(KIND=r8), allocatable :: emis_sfc(:,:) 
+    REAL(KIND=r8), allocatable :: t_rad(:,:) 
+    REAL(KIND=r8), allocatable :: pmid_rad(:,:) 
+    REAL(KIND=r8), allocatable :: pint_rad(:,:) 
+
+   ! cloud radiative parameters are "in cloud" not "in cell"
+
+   ! cloud radiative parameters are "in cloud" not "in cell"
+
+   ! cloud radiative parameters are "in cloud" not "in cell"
+
+   ! cloud radiative parameters are "in cloud" not "in cell"
+
+   ! combined cloud radiative parameters are "in cloud" not "in cell"
+
+   ! RRTMGP cloud objects
+    TYPE(ty_optical_props) :: cloud_lw 
+
+
+   ! gas vmr
+    TYPE(ty_gas_concs) :: gas_concs_lw 
+
+   ! Aerosol radiative properties
+
+   ! RRTMGP aerosol objects
+    TYPE(ty_optical_props) :: aer_lw 
+
+   ! Fluxes
+
+    TYPE(ty_fluxes_byband) :: flw, flwc 
+
+  
+
+    CHARACTER(LEN=128) :: errmsg 
+
+   !--------------------------------------------------------------------------------------
+
+    INTEGER, INTENT(IN) :: kgen_unit 
+    REAL(KIND=kgen_dp), INTENT(OUT) :: kgen_elapsed_time 
+    LOGICAL, INTENT(OUT) :: kgen_isverified 
+    LOGICAL :: kgen_istrue 
+    REAL(KIND=8) :: kgen_array_sum 
+    INTEGER :: kgen_mpirank, kgen_openmptid, kgen_kernelinvoke 
+    LOGICAL :: kgen_evalstage, kgen_warmupstage, kgen_mainstage 
+    COMMON / state / kgen_mpirank, kgen_openmptid, kgen_kernelinvoke, kgen_evalstage, kgen_warmupstage, kgen_mainstage 
+      
+    TYPE(ty_fluxes_byband) :: kgenref_flw 
+    TYPE(ty_fluxes_byband) :: kgenref_flwc 
+    CHARACTER(LEN=128) :: kgenref_errmsg 
+    TYPE(check_t) :: check_status 
+    INTEGER*8 :: kgen_intvar, kgen_start_clock, kgen_stop_clock, kgen_rate_clock 
+    INTEGER, PARAMETER :: kgen_maxiter = 600
+      
+    !local input variables 
+    CALL kr_radiation_tend_real__r8_dim1(t_sfc, kgen_unit) 
+    CALL kr_radiation_tend_real__r8_dim2(emis_sfc, kgen_unit) 
+    CALL kr_radiation_tend_real__r8_dim2(t_rad, kgen_unit) 
+    CALL kr_radiation_tend_real__r8_dim2(pmid_rad, kgen_unit) 
+    CALL kr_radiation_tend_real__r8_dim2(pint_rad, kgen_unit) 
+    CALL kr_mo_optical_props_ty_optical_props(cloud_lw, kgen_unit) 
+    CALL kr_mo_gas_concentrations_ty_gas_concs(gas_concs_lw, kgen_unit) 
+    CALL kr_mo_optical_props_ty_optical_props(aer_lw, kgen_unit) 
+    CALL kr_mo_fluxes_byband_ty_fluxes_byband(flw, kgen_unit) 
+    CALL kr_mo_fluxes_byband_ty_fluxes_byband(flwc, kgen_unit) 
+    READ (UNIT = kgen_unit) errmsg 
+      
+    !extern output variables 
+    CALL kr_externs_out_radiation(kgen_unit) 
+    CALL kr_externs_out_mo_rrtmgp_lw(kgen_unit) 
+    CALL kr_externs_out_mo_lw_solver(kgen_unit) 
+      
+    !local output variables 
+    CALL kr_mo_fluxes_byband_ty_fluxes_byband(kgenref_flw, kgen_unit) 
+    CALL kr_mo_fluxes_byband_ty_fluxes_byband(kgenref_flwc, kgen_unit) 
+    READ (UNIT = kgen_unit) kgenref_errmsg 
+
+
+   ! Cosine solar zenith angle for current time step
+
+
+   ! Gather night/day column indices.
+
+
+   ! Associate pointers to physics buffer fields
+
+
+   ! Find tropopause height if needed for diagnostic output
+
+
+    IF (kgen_evalstage) THEN 
+    END IF   
+    IF (kgen_warmupstage) THEN 
+    END IF   
+    IF (kgen_mainstage) THEN 
+    END IF   
+      
+    !Uncomment following call statement to turn on perturbation experiment. 
+    !Adjust perturbation value and/or kind parameter if required. 
+    !CALL kgen_perturb_real( your_variable, 1.0E-15_8 ) 
+      
+      
+    !call to kgen kernel 
+               errmsg = rrtmgp_lw( &
+                  kdist_lw, gas_concs_lw, pmid_rad, t_rad, pint_rad, &
+                  t_sfc, emis_sfc, cloud_lw, flw, flwc, aer_props=aer_lw)
+               IF (kgen_mainstage) THEN 
+                     
+                   !verify init 
+                   CALL kgen_init_check(check_status, tolerance=1.D-14, verboseLevel=1) 
+                     
+                   !extern verify variables 
+                     
+                   !local verify variables 
+                   CALL kv_mo_fluxes_byband_ty_fluxes_byband("flwc", check_status, flwc, kgenref_flwc) 
+                   CALL kv_mo_fluxes_byband_ty_fluxes_byband("flw", check_status, flw, kgenref_flw) 
+                   CALL kv_radiation_tend_character_128_("errmsg", check_status, errmsg, kgenref_errmsg) 
+                   WRITE (*, *) "" 
+                   IF (check_status%verboseLevel > 0) THEN 
+                       WRITE (*, *) "Number of output variables: ", check_status%numTotal 
+                       WRITE (*, *) "Number of identical variables: ", check_status%numIdentical 
+                       WRITE (*, *) "Number of non-identical variables within tolerance: ", check_status%numInTol 
+                       WRITE (*, *) "Number of non-identical variables out of tolerance: ", check_status%numOutTol 
+                       WRITE (*, *) "Tolerance: ", check_status%tolerance 
+                   END IF   
+                   WRITE (*, *) "" 
+                   IF (check_status%numOutTol > 0) THEN 
+                       WRITE (*, *) "Verification FAILED" 
+                       check_status%Passed = .FALSE. 
+                       kgen_isverified = .FALSE. 
+                   ELSE 
+                       WRITE (*, *) "Verification PASSED" 
+                       check_status%Passed = .TRUE. 
+                       kgen_isverified = .TRUE. 
+                   END IF   
+                   WRITE (*, *) "" 
+                   CALL SYSTEM_CLOCK(kgen_start_clock, kgen_rate_clock) 
+                   DO kgen_intvar = 1, kgen_maxiter 
+               errmsg = rrtmgp_lw( &
+                  kdist_lw, gas_concs_lw, pmid_rad, t_rad, pint_rad, &
+                  t_sfc, emis_sfc, cloud_lw, flw, flwc, aer_props=aer_lw)
+                   END DO   
+                   CALL SYSTEM_CLOCK(kgen_stop_clock, kgen_rate_clock) 
+                   kgen_elapsed_time = 1.0e6*(kgen_stop_clock - kgen_start_clock)/REAL(kgen_rate_clock*kgen_maxiter) 
+                   WRITE (*, *) "rrtmgp_lw : Time per call (usec): ", kgen_elapsed_time 
+               END IF   
+               IF (kgen_warmupstage) THEN 
+               END IF   
+               IF (kgen_evalstage) THEN 
+               END IF   
+
+
+   ! output rad inputs and resulting heating rates
+
+   ! Compute net radiative heating tendency
+
+
+   ! convert radiative heating rates to Q*dp for energy conservation
+
+
+!-------------------------------------------------------------------------------
+!-------------------------------------------------------------------------------
+
+                 
+               CONTAINS 
+                 
+
+
+   !-------------------------------------------------------------------------------
+
+
+   !-------------------------------------------------------------------------------
+
+
+   !-------------------------------------------------------------------------------
+
+               !read state subroutine for kr_radiation_tend_real__r8_dim1 
+               SUBROUTINE kr_radiation_tend_real__r8_dim1(var, kgen_unit, printvar) 
+                   REAL(KIND=r8), INTENT(INOUT), ALLOCATABLE, DIMENSION(:) :: var 
+                   INTEGER, INTENT(IN) :: kgen_unit 
+                   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: printvar 
+                   LOGICAL :: kgen_istrue 
+                   REAL(KIND=8) :: kgen_array_sum 
+                   INTEGER :: idx1 
+                   INTEGER, DIMENSION(2,1) :: kgen_bound 
+                     
+                   READ (UNIT = kgen_unit) kgen_istrue 
+                   IF (kgen_istrue) THEN 
+                       IF (ALLOCATED( var )) THEN 
+                           DEALLOCATE (var) 
+                       END IF   
+                       READ (UNIT = kgen_unit) kgen_array_sum 
+                       READ (UNIT = kgen_unit) kgen_bound(1, 1) 
+                       READ (UNIT = kgen_unit) kgen_bound(2, 1) 
+                       ALLOCATE (var(kgen_bound(1,1):kgen_bound(2,1))) 
+                       READ (UNIT = kgen_unit) var 
+                       IF (PRESENT( printvar )) THEN 
+                           CALL kgen_array_sumcheck(printvar, kgen_array_sum, REAL(SUM(var, mask=(var .eq. var)), 8), .TRUE.) 
+                           WRITE (*, *) "** KGEN DEBUG: " // printvar // "**" // NEW_LINE("A"), var 
+                       ELSE 
+                           CALL kgen_array_sumcheck("UNKNOWN", kgen_array_sum, REAL(SUM(var, mask=(var .eq. var)), 8), .TRUE.) 
+                       END IF   
+                   END IF   
+               END SUBROUTINE kr_radiation_tend_real__r8_dim1 
+                 
+               !read state subroutine for kr_radiation_tend_real__r8_dim2 
+               SUBROUTINE kr_radiation_tend_real__r8_dim2(var, kgen_unit, printvar) 
+                   REAL(KIND=r8), INTENT(INOUT), ALLOCATABLE, DIMENSION(:,:) :: var 
+                   INTEGER, INTENT(IN) :: kgen_unit 
+                   CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: printvar 
+                   LOGICAL :: kgen_istrue 
+                   REAL(KIND=8) :: kgen_array_sum 
+                   INTEGER :: idx1, idx2 
+                   INTEGER, DIMENSION(2,2) :: kgen_bound 
+                     
+                   READ (UNIT = kgen_unit) kgen_istrue 
+                   IF (kgen_istrue) THEN 
+                       IF (ALLOCATED( var )) THEN 
+                           DEALLOCATE (var) 
+                       END IF   
+                       READ (UNIT = kgen_unit) kgen_array_sum 
+                       READ (UNIT = kgen_unit) kgen_bound(1, 1) 
+                       READ (UNIT = kgen_unit) kgen_bound(2, 1) 
+                       READ (UNIT = kgen_unit) kgen_bound(1, 2) 
+                       READ (UNIT = kgen_unit) kgen_bound(2, 2) 
+                       ALLOCATE (var(kgen_bound(1,1):kgen_bound(2,1), kgen_bound(1,2):kgen_bound(2,2))) 
+                       READ (UNIT = kgen_unit) var 
+                       IF (PRESENT( printvar )) THEN 
+                           CALL kgen_array_sumcheck(printvar, kgen_array_sum, REAL(SUM(var, mask=(var .eq. var)), 8), .TRUE.) 
+                           WRITE (*, *) "** KGEN DEBUG: " // printvar // "**" // NEW_LINE("A"), var 
+                       ELSE 
+                           CALL kgen_array_sumcheck("UNKNOWN", kgen_array_sum, REAL(SUM(var, mask=(var .eq. var)), 8), .TRUE.) 
+                       END IF   
+                   END IF   
+               END SUBROUTINE kr_radiation_tend_real__r8_dim2 
+                 
+               !verify state subroutine for kv_radiation_tend_character_128_ 
+               RECURSIVE SUBROUTINE kv_radiation_tend_character_128_(varname, check_status, var, kgenref_var) 
+                   CHARACTER(LEN=*), INTENT(IN) :: varname 
+                   TYPE(check_t), INTENT(INOUT) :: check_status 
+                   CHARACTER(LEN=128), INTENT(IN) :: var, kgenref_var 
+                   INTEGER :: check_result 
+                   LOGICAL :: is_print = .FALSE. 
+                     
+                   character(LEN=128) :: diff 
+                     
+                   check_status%numTotal = check_status%numTotal + 1 
+                     
+                   IF (var == kgenref_var) THEN 
+                       check_status%numIdentical = check_status%numIdentical + 1 
+                       IF (check_status%verboseLevel > 1) THEN 
+                           WRITE (*, *) trim(adjustl(varname)), " is IDENTICAL." 
+                       END IF   
+                       check_result = CHECK_IDENTICAL 
+                   ELSE 
+                       check_status%numOutTol = check_status%numOutTol + 1 
+                       IF (check_status%verboseLevel > 0) THEN 
+                           WRITE (*, *) trim(adjustl(varname)), " is NOT IDENTICAL." 
+                       END IF   
+                       check_result = CHECK_OUT_TOL 
+                   END IF   
+                   IF (check_result == CHECK_IDENTICAL) THEN 
+                       IF (check_status%verboseLevel > 2) THEN 
+                           WRITE (*, *) "NOT IMPLEMENTED" 
+                           WRITE (*, *) "" 
+                       END IF   
+                   ELSE IF (check_result == CHECK_OUT_TOL) THEN 
+                       IF (check_status%verboseLevel > 0) THEN 
+                           WRITE (*, *) "NOT IMPLEMENTED" 
+                           WRITE (*, *) "" 
+                       END IF   
+                   ELSE IF (check_result == CHECK_IN_TOL) THEN 
+                       IF (check_status%verboseLevel > 1) THEN 
+                           WRITE (*, *) "NOT IMPLEMENTED" 
+                           WRITE (*, *) "" 
+                       END IF   
+                   END IF   
+                     
+               END SUBROUTINE kv_radiation_tend_character_128_ 
+                 
+END SUBROUTINE radiation_tend 
+
+!===============================================================================
+
+
+!===============================================================================
+
+
+!===============================================================================
+
+
+!===============================================================================
+
+
+!===============================================================================
+
+
+!read state subroutine for kr_externs_in_radiation 
+SUBROUTINE kr_externs_in_radiation(kgen_unit) 
+    INTEGER, INTENT(IN) :: kgen_unit 
+    LOGICAL :: kgen_istrue 
+    REAL(KIND=8) :: kgen_array_sum 
+      
+    CALL kr_mo_gas_optics_specification_ty_gas_optics_specification(kdist_lw, kgen_unit) 
+END SUBROUTINE kr_externs_in_radiation 
+  
+!read state subroutine for kr_externs_out_radiation 
+SUBROUTINE kr_externs_out_radiation(kgen_unit) 
+    INTEGER, INTENT(IN) :: kgen_unit 
+      
+    LOGICAL :: kgen_istrue 
+    REAL(KIND=8) :: kgen_array_sum 
+END SUBROUTINE kr_externs_out_radiation 
+  
+end module radiation

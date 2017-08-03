@@ -9,7 +9,7 @@ KGEN := /glade/u/home/youngsun/repos/github/KGen
 
 MAKEFILEDIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 SUITENAME := $(shell python -c "print '_'.join('${MAKEFILEDIR}'.split('workflow')[1].split('/')[:-1])")
-WORKDIR := /glade/scratch/youngsun/cylcworkspace/port
+WORKDIR := /glade/scratch/youngsun/cylcworkspace/${SUITENAME}
 
 SUITEDIR := ${MAKEFILEDIR}/..
 INCDIR := ${SUITEDIR}/inc
@@ -57,12 +57,18 @@ cylc_rmport:
 copy:
 	@echo 'Copying_${WAVE}_${TEST}'
 	mkdir -p ${WORKDIR}/${WAVE}_${TEST}/src
-	cp -R -u -p ${PORT}/* ${WORKDIR}/${WAVE}_${TEST}/src
+	cp -R -p ${PORT}/* ${WORKDIR}/${WAVE}_${TEST}/src
+	cp -f ${INCDIR}/f19c5aqportm-1d.sh ${WORKDIR}/${WAVE}_${TEST}/src
+	cp -f ${INCDIR}/f19c5aqrpportm-1d.sh ${WORKDIR}/${WAVE}_${TEST}/src
 ifeq (${TEST},RRTMGP)
 	cp -f ${INCDIR}/radiation.F90 ${WORKDIR}/${WAVE}_${TEST}/src/components/cam/src/physics/rrtmgp
 	cp -f ${INCDIR}/mo_rrtmgp_sw.F90 ${WORKDIR}/${WAVE}_${TEST}/src/components/cam/src/physics/rrtmgp/ext
 	cp -f ${INCDIR}/mo_rrtmgp_lw.F90 ${WORKDIR}/${WAVE}_${TEST}/src/components/cam/src/physics/rrtmgp/ext
-	cp -f ${INCDIR}/mo_gas_concentrations.F90 ${WORKDIR}/${WAVE}_${TEST}/src/components/cam/src/physics/rrtmgp/ext
+	cp -f ${INCDIR}/mo_gas_optics_specification.F90 ${WORKDIR}/${WAVE}_${TEST}/src/components/cam/src/physics/rrtmgp/ext
+	cp -f ${INCDIR}/mo_gas_optics_kernels.F90 ${WORKDIR}/${WAVE}_${TEST}/src/components/cam/src/physics/rrtmgp/ext
+	cp -f ${INCDIR}/mo_util_reorder.F90 ${WORKDIR}/${WAVE}_${TEST}/src/components/cam/src/physics/rrtmgp/ext
+	cp -f ${INCDIR}/mo_rrtmgp_kind.F90 ${WORKDIR}/${WAVE}_${TEST}/src/components/cam/src/physics/rrtmgp/ext
+	cp -f ${INCDIR}/mo_util_string.F90 ${WORKDIR}/${WAVE}_${TEST}/src/components/cam/src/physics/rrtmgp/ext
 endif
 
 run:
@@ -74,6 +80,7 @@ run:
 		-e "/glade/u/home/youngsun/repos/github/SoftFlow/workflow/yellowstone_ncar/port/kgen/inc/exclude.ini" \
 		--outdir ${WORKDIR}/${WAVE}_${TEST}/output \
 		--source alias=/glade/scratch:/glade2/scratch2 \
-		--timing repeat=10 \
+		--timing repeat=1 \
 		--mpi enable \
 		${WORKDIR}/${WAVE}_${TEST}/${CALLSITE}
+
