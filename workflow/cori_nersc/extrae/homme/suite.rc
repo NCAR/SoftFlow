@@ -4,7 +4,11 @@
 {# set CPUS = [ 'KNL', 'HSW' ] #}
 {% set CONSTRAINTS = { 'KNL': 'knl,quad,cache', 'HSW': 'haswell' } %}
 {% set INSTS = { 'KNL': '-xMIC-AVX512', 'HSW': '-xCORE-AVX2' } %}
-{% set PRERUN= { 'KNL': 'module swap craype-haswell craype-mic-knl; module load cmake; module load cray-hdf5/1.10.0; module load cray-netcdf; export CRAYPE_LINK_TYPE=dynamic', 'HSW': 'module load craype-haswell; module load cmake; module load cray-hdf5/1.10.0; module load cray-netcdf; module load extrae/3.3.0; module load papi/5.4.3.3; export CRAYPE_LINK_TYPE=dynamic' } %}
+
+{# set PRERUN= { 'KNL': 'module swap craype-haswell craype-mic-knl; module load cmake; module load cray-netcdf; export CRAYPE_LINK_TYPE=dynamic', 'HSW': 'module load craype-haswell; module load cmake; module load cray-hdf5/1.10.0; module load cray-netcdf; module load extrae/3.3.0; module load papi/5.4.3.3; export CRAYPE_LINK_TYPE=dynamic' } #}
+
+{% set PRERUN= { 'KNL': 'export MODULEPATH=${MODULEPATH}:/global/homes/b/bpd6/projects/Software/Modules; module swap craype-haswell PrgEnv-intel/6.0.3; module swap intel intel/patched; module load cmake; module load cray-netcdf/4.4.1; module load craype-mic-knl; module unload darshan; module load cray-hdf5/1.10.0; export CRAYPE_LINK_TYPE=dynamic', 'HSW': 'module load craype-haswell; module load cmake; module load cray-hdf5/1.10.0; module load cray-netcdf; module load extrae/3.3.0; module load papi/5.4.3.3; export CRAYPE_LINK_TYPE=dynamic' } %}
+
 {% set groups = [ 'control', 'experiment' ] %}
 
 title = "Task for running Extrae"

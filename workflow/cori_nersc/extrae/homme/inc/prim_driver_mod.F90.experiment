@@ -9,6 +9,10 @@ module EXTRAE_MODULE
         end subroutine extrae_user_function
         subroutine extrae_next_hwc_set
         end subroutine extrae_next_hwc_set
+        subroutine extrae_restart
+        end subroutine extrae_restart
+        subroutine extrae_shutdown
+        end subroutine extrae_shutdown
     end interface
 end module EXTRAE_MODULE
 
@@ -1820,7 +1824,18 @@ contains
 
     real (kind=real_kind) :: dp_np1(np,np)
 
-    call extrae_user_function (1)
+	integer, dimension(11), save :: extrae_mpiranks = (/ 0, 329, 16, 17, 7, 273, 224, 64, 264, 185, 323 /) ! assumes number of mpi ranks is 384
+
+!#ifdef _MPI
+!    if ( ANY( extrae_mpiranks == hybrid%par%rank ) ) then
+!     call extrae_user_function (1)
+!    end if
+!#else
+!     call extrae_user_function (1)
+!#endif
+
+     call extrae_restart
+     call extrae_user_function (1)
 
     dt_q = dt*qsplit
     if (ntrac>0.and.rstep==1) then
@@ -2061,8 +2076,17 @@ contains
 #endif
     endif
 
-    call extrae_user_function (0)
+!#ifdef _MPI
+!    if ( ANY( extrae_mpiranks == hybrid%par%rank ) ) then
+!     call extrae_user_function (0)
+!    end if
+!#else
+!     call extrae_user_function (0)
+!#endif
+
+     call extrae_user_function (0)
     call extrae_next_hwc_set
+    call extrae_shutdown
 
   end subroutine prim_step
 

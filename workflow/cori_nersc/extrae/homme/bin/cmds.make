@@ -4,7 +4,8 @@
 # Variables
 ##############
 
-TEST := perfTest
+TEST := perfTestWACCM
+#TEST := perfTest
 CPU ?= HSW
 
 #HOMME_CONTROL := /global/homes/g/grnydawn/apps/homme_dungeon15_hsw_nggps/dungeon
@@ -34,6 +35,7 @@ EFOLDING := ${EGROUPDIR}/run/${TEST}:dungeon28
 
 PLOT_SCRIPT_EXFOLD ?= ${SOFTFLOWDIR}/lib/python/plot_exfold.py
 PLOT_SCRIPT_EXFILL ?= ${SOFTFLOWDIR}/lib/python/plot_fill_exfold.py
+PLOT_SCRIPT_EXFLATTEN ?= ${SOFTFLOWDIR}/lib/python/plot_flatten_exfold.py
 
 #################
 # Cylc useful commands
@@ -70,8 +72,11 @@ cylc_rmport:
 # Other useful commands
 #################
 
-salloc:
+salloc-hsw:
 	salloc -N 1 -C haswell -p regular --qos=premium -t 08:00:00 -L SCRATCH
+
+salloc-knl:
+	salloc -N 1 -C knl,quad,cache -p debug -t 00:30:00 -L SCRATCH
 
 ####################
 # Cylc Suite Targets
@@ -111,7 +116,7 @@ config_control:
         -DENABLE_PERFTEST=TRUE \
         -DEXTRAE_LIB=mpitracef \
         -DEXTRAE_DIR:PATH=${EXTRAE_HOME} \
-		-DADD_Fortran_FLAGS="-g ${INST}" \
+		-DADD_Fortran_FLAGS="-g ${INST} -D_OPENMP -D_COLLAPSE_AND_ALIGN" \
 		-DOPT_FFLAGS=-O3 \
 		${CGROUPDIR}/homme
 
@@ -132,7 +137,7 @@ config_experiment:
         -DENABLE_PERFTEST=TRUE \
         -DEXTRAE_LIB=mpitracef \
         -DEXTRAE_DIR:PATH=${EXTRAE_HOME} \
-		-DADD_Fortran_FLAGS=${INST} \
+		-DADD_Fortran_FLAGS="${INST} -D_OPENMP -D_COLLAPSE_AND_ALIGN" \
 		-DOPT_FFLAGS=-O3 \
 		${EGROUPDIR}/homme
 
@@ -167,7 +172,8 @@ run_control:
 	cd ${CGROUPDIR}/run; \
 		#rm -f vcoord; ln -s ${CGROUPDIR}/build/tests/${TEST}/vcoord vcoord; \
 		rm -rf vcoord; mkdir vcoord; cp ${INCDIR}/*.ascii vcoord; \
-		rm -f ${TEST}.nl; cp ${INCDIR}/${TEST}.nl ${TEST}.nl; \
+		rm -f ${TEST}.nl; cp ${INCDIR}/${TEST}.nl.control ${TEST}.nl; \
+		rm -rf set-* TRACE.*; \
 		sbatch -W ${BINDIR}/job.${CPU}.submit ${CGROUPDIR}/build/test_execs/${TEST}/${TEST} ${TEST}.nl
 
 run_experiment:
@@ -178,7 +184,8 @@ run_experiment:
 	cd ${EGROUPDIR}/run; \
 		#rm -f vcoord; ln -s ${EGROUPDIR}/build/tests/${TEST}/vcoord vcoord; \
 		rm -rf vcoord; mkdir vcoord; cp ${INCDIR}/*.ascii vcoord; \
-		rm -f ${TEST}.nl; cp ${INCDIR}/${TEST}.nl ${TEST}.nl; \
+		rm -f ${TEST}.nl; cp ${INCDIR}/${TEST}.nl.experiment ${TEST}.nl; \
+		rm -rf set-* TRACE.*; \
 		sbatch -W ${BINDIR}/job.${CPU}.submit ${EGROUPDIR}/build/test_execs/${TEST}/${TEST} ${TEST}.nl
 
 collect_control:
@@ -203,6 +210,7 @@ fold_experiment:
 
 plot:
 	@echo 'Begin plot'
-	cd ${WORKDIR}; python ${PLOT_SCRIPT_EXFOLD} -t ${CFOLDING} ${EFOLDING}
+	cd ${WORKDIR}; python ${PLOT_SCRIPT_EXFOLD} -t --exclude-per-ins ${CFOLDING} ${EFOLDING}
 	#cd ${WORKDIR}; python ${PLOT_SCRIPT_EXFILL} -t -e PAPI_L1_DCM -f compute_and_apply_rhs,euler_step,advance_hypervis_dp ${CFOLDING} ${EFOLDING}
 	cd ${WORKDIR}; python ${PLOT_SCRIPT_EXFILL} -t --exclude-per-ins -f compute_and_apply_rhs,euler_step,advance_hypervis_dp ${CFOLDING} ${EFOLDING}
+	cd ${WORKDIR}; python ${PLOT_SCRIPT_EXFLATTEN} -t --exclude-per-ins -f compute_and_apply_rhs,euler_step,advance_hypervis_dp ${CFOLDING} ${EFOLDING}

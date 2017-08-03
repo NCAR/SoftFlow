@@ -1,0 +1,28 @@
+[PRESET]
+
+PAPI_L1_DCM  0x80000000  Yes   No   Level 1 data cache misses
+PAPI_L1_ICM  0x80000001  Yes   No   Level 1 instruction cache misses
+PAPI_L1_TCM  0x80000006  Yes   Yes  Level 1 cache misses
+PAPI_L2_TCM  0x80000007  Yes   No   Level 2 cache misses
+PAPI_TLB_DM  0x80000014  Yes   No   Data translation lookaside buffer misses
+PAPI_L1_LDM  0x80000017  Yes   No   Level 1 load misses
+PAPI_L2_LDM  0x80000019  Yes   No   Level 2 load misses
+PAPI_STL_ICY 0x80000025  Yes   No   Cycles with no instruction issue
+PAPI_BR_UCN  0x8000002a  Yes   Yes  Unconditional branch instructions
+PAPI_BR_CN   0x8000002b  Yes   No   Conditional branch instructions
+PAPI_BR_TKN  0x8000002c  Yes   No   Conditional branch instructions taken
+PAPI_BR_NTK  0x8000002d  Yes   Yes  Conditional branch instructions not taken
+PAPI_BR_MSP  0x8000002e  Yes   No   Conditional branch instructions mispredicted
+PAPI_TOT_INS 0x80000032  Yes   No   Instructions completed
+PAPI_LD_INS  0x80000035  Yes   No   Load instructions
+PAPI_SR_INS  0x80000036  Yes   No   Store instructions
+PAPI_BR_INS  0x80000037  Yes   No   Branch instructions
+PAPI_RES_STL 0x80000039  Yes   No   Cycles stalled on any resource
+PAPI_TOT_CYC 0x8000003b  Yes   No   Total cycles
+PAPI_LST_INS 0x8000003c  Yes   Yes  Load/store instructions completed
+PAPI_L1_DCA  0x80000040  Yes   Yes  Level 1 data cache accesses
+PAPI_L1_ICH  0x80000049  Yes   No   Level 1 instruction cache hits
+PAPI_L1_ICA  0x8000004c  Yes   No   Level 1 instruction cache accesses
+PAPI_L2_TCH  0x80000056  Yes   Yes  Level 2 total cache hits
+PAPI_L2_TCA  0x80000059  Yes   No   Level 2 total cache accesses
+PAPI_REF_CYC 0x8000006b  Yes   No   Reference clock cycles

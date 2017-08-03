@@ -39,8 +39,8 @@ try:
 
     #plt.rcParams['image.cmap'] = 'Accent'
     #colors = { idx:cname for idx, cname in enumerate(mcolors.cnames) }
-    colors = { 0:'r', 1:'b', 2:'royalblue', 3:'palevioletred', 4:'chartreuse', 5:'darkgrey' }
-    pdf = PdfPages('exfill_report.pdf')
+    colors = { 0:'r', 1:'b', 2:'royalblue', 3:'palevioletred', 4:'chartreuse' }
+    pdf = PdfPages('exflat_report.pdf')
 except:
     print ('ERROR: matplotlib module is not loaded.')
     sys.exit(-1)
@@ -340,6 +340,7 @@ def gen_masks():
 
     # constants
     WINSIZE = 15
+    #WINSIZE = 20
     winceil = int(math.ceil(WINSIZE/2))
     winfloor = int(math.floor(WINSIZE/2))
     THRESHOLD = winceil
@@ -547,17 +548,24 @@ def gen_plotpages():
                 axplot.set_ylabel('# events ( $\mathregular{10^{6}}$ )')
 
                 xvals = [x*etime for x in _xvals]
+                flatten_vals = [ 0.0 ] * len(yvals)
 
                 for absfolddir, regionname in cfg['regions'].items():
                     if regionname == region:
                         for cidx, (funcname, mask) in enumerate(cfg['prvdata'][absfolddir]['funcmask'].items()):
-                            fplot = axplot.fill_between(xvals, yvals, where=mask, color=colors[cidx+2])
+                            average = sum( [ val if istrue else 0 for val, istrue in zip(yvals, mask) ] ) / mask.count(True)
+                            for midx, istrue in enumerate(mask):
+                                if istrue:
+                                    flatten_vals[midx] = average
+                            #import pdb; pdb.set_trace()
+                            #fplot = axplot.fill_between(xvals, yvals, where=mask, color=colors[cidx+2])
+                            fplot = axplot.fill_between(xvals, flatten_vals, where=mask, color=colors[cidx+2])
                             if funcname not in labels:
                                 funcs.append(fplot)
                                 labels.append(funcname)
 
                 #plot = axplot.plot(xvals, yvals, color=colors[idx], linewidth=LINEWIDTH)
-                plot = axplot.plot(xvals, yvals, color=colors[5], linewidth=LINEWIDTH)
+                plot = axplot.plot(xvals, flatten_vals, color=colors[idx], linewidth=LINEWIDTH)
 
                 #if cfg['flags'].get('etime', False):
                 #    labels.append('%s (%s ms)'%(region, cfg['etimes'][cfg['folddirs'][idx]]))

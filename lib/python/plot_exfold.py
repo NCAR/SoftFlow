@@ -40,6 +40,7 @@ def parse_args():
     parser.add_argument('folddirs', metavar='folding-dir', type=str, nargs='+', help='Directory containing folded Extrae raw data')
     parser.add_argument('-e', '--event', dest='event', type=str, action='append', default=None, help='Events to use (default: all events)')
     parser.add_argument('-t', '--time', dest='etime', action='store_true', default=False, help='Add elapsed time in plot (default: No)')
+    parser.add_argument('--exclude-per-ins', dest='exclude_per_ins', action='store_true', default=False, help='Exclude per_ins events (default: No)')
     #parser.add_argument('--sum', dest='accumulate', action='store_const', const=sum, default=max, help='sum the integers (default: find the max)')
 
     args = parser.parse_args()
@@ -54,6 +55,9 @@ def parse_args():
                 events.append(evt)
         cfg['events'] = events
   
+     # exclude per_ins events
+    cfg['exclude_per_ins'] = args.exclude_per_ins
+
     # folding dirs
     folddirs = []
     cfg['folddirs'] = folddirs
@@ -135,6 +139,8 @@ def read_data():
                         continue
                 elif not ( isinstance(cfg['events'], bool) and cfg['events']):
                     continue
+                elif cfg['exclude_per_ins'] and row['counter'].endswith('per_ins'):
+                    continue
 
                 # counter
                 if row['counter'] not in csvdata:
@@ -163,7 +169,7 @@ def read_data():
                 if xval not in region:
                     if xval < 0.01 or xval > 0.99:
                         region[ xval ] = 0
-                    elif math.isnan(yval):
+                    elif math.isnan(yval) or math.isinf(yval):
                         region[ xval ] = 0
                     else:
                         region[ xval ] = yval
@@ -289,7 +295,9 @@ def gen_plotpages():
             horizontalalignment='center', verticalalignment='center')
         ax.axis('off')
         
-        H = max(0.001, maxval*1.5)
+        H = max(0.0001, maxval*1.5)
+        #if math.isinf(H) or math.isnan(H):
+        #    H = 1
         ax2.axis([0, 100, 0, H])
 
         ax2.set_xlabel('% elapsed time')

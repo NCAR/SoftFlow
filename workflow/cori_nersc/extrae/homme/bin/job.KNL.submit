@@ -1,12 +1,14 @@
 #!/bin/bash
-#SBATCH -N 3
+#SBATCH -N 6 ###6
 #SBATCH -C knl,quad,cache
 ##3#SBATCH -C knl,quad,flat
 #SBATCH -L SCRATCH
+##SBATCH -p regular
 #SBATCH -p debug
 #SBATCH -J myjob
 #SBATCH --mail-user=youngsun@ucar.edu
 #SBATCH -t 00:30:00
+##SBATCH -t 02:00:00
 
 #OpenMP settings:
 #export OMP_NUM_THREADS=1
@@ -26,4 +28,7 @@ export LD_LIBRARY_PATH=${EXTRAE_HOME}/lib:${ZLIB_HOME}/lib:${PAPI_HOME}/lib:${XM
 ulimit -s unlimited
 
 #run the application:
-srun -n 384 -c 1 --cpu_bind=cores $1 < $2
+#srun -n 384 -c 1 --cpu_bind=cores $1 < $2
+srun -n 384 -c 4 --cpu_bind=cores $1 < $2
+#srun -n 54 -c 1 --cpu_bind=cores $1 < $2
+#srun -n 54 -c 4 --cpu_bind=cores $1 < $2
