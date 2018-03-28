@@ -1,0 +1,31 @@
+#!/bin/bash
+
+
+TEST=perfTestWACCM
+
+WORKDIR=/Users/youngsun/trepo/temp/homme_plots
+
+# Cheyenne
+CGROUPDIR=/Users/youngsun/Pictures/homme_paper/traces/cheyenne/waccm/ne3_11N/ipcc02
+EGROUPDIR=/Users/youngsun/Pictures/homme_paper/traces/cheyenne/waccm/ne3_11N/dungeon28
+
+# Cori
+#CGROUPDIR=/Users/youngsun/Pictures/homme_paper/traces/cori/waccm/ne3_N6/ipcc02/perfTestWACCM
+#EGROUPDIR=/Users/youngsun/Pictures/homme_paper/traces/cori/waccm/ne3_N6/dungeon28
+
+CFOLDING=${CGROUPDIR}/${TEST}:ipcc02
+EFOLDING=${EGROUPDIR}/${TEST}:dungeon28
+
+#PLOT_SCRIPT=/Users/youngsun/repos/github/SoftFlow/lib/python/plot_fill_exfold.py
+#PLOT_SCRIPT=/Users/youngsun/repos/github/SoftFlow/lib/python/plot_homme_paper_cheyenne2.py
+PLOT_SCRIPT=/Users/youngsun/repos/github/SoftFlow/lib/python/plot_homme_paper_cheyenne3.py
+#PLOT_SCRIPT=/Users/youngsun/repos/github/SoftFlow/lib/python/plot_homme_paper_cori.py
+
+cd ${WORKDIR}
+python ${PLOT_SCRIPT} -t --exclude-per-ins -f compute_and_apply_rhs,euler_step,advance_hypervis_dp ${CFOLDING} ${EFOLDING}
+
+
+
+
+
+
